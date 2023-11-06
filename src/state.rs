@@ -5,3 +5,9 @@ pub type NestedRouter = axum::Router<Arc<State>>;
 
 #[derive(Debug)]
 pub struct State {}
+
+impl State {
+    pub fn new() -> State {
+        State {}
+    }
+}
