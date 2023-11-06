@@ -2,6 +2,8 @@ use axum::ServiceExt;
 use tower::Layer;
 use tower_http::normalize_path::NormalizePathLayer;
 
+mod state;
+
 #[tokio::main]
 async fn main() {
     let app = NormalizePathLayer::trim_trailing_slash().layer(axum::Router::new());
