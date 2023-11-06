@@ -15,6 +15,7 @@ pub struct User {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Post {
     pub id: PostID,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
     pub reply_to: Option<PostID>,
     pub replies: Vec<PostID>,
     pub quotes: Vec<PostID>,

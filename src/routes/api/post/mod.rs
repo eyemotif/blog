@@ -1,6 +1,7 @@
 use crate::state::NestedRouter;
 use axum::routing::get;
 
+mod latest;
 mod meta;
 mod text;
 
