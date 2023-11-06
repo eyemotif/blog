@@ -13,6 +13,7 @@ async fn main() {
     let app = NormalizePathLayer::trim_trailing_slash().layer(
         axum::Router::new()
             .nest("/", routes::page::route())
+            .nest("/api", routes::api::route())
             .with_state(state),
     );
 
