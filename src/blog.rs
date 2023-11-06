@@ -1,6 +1,8 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 pub type PostID = String;
 pub type UserID = String;
+
+pub const STORE_PATH: &str = "/Users/iris/Documents/Rust/Frith/blog/test-store";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
