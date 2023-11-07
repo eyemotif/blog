@@ -2,6 +2,7 @@ use axum::ServiceExt;
 use tower::Layer;
 use tower_http::normalize_path::NormalizePathLayer;
 
+mod auth;
 mod blog;
 mod routes;
 mod state;
