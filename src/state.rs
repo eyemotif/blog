@@ -1,4 +1,4 @@
-use crate::blog::{SessionID, UserID};
+use crate::blog::SessionID;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -13,7 +13,7 @@ pub struct State {
 
 #[derive(Debug, Clone)]
 pub struct Session {
-    pub for_user_id: UserID,
+    pub for_username: String,
     pub expires_at: std::time::Instant,
 }
 
@@ -32,11 +32,15 @@ impl State {
 
         session.is_valid().then(|| session.clone())
     }
-    pub async fn create_session(&self, for_user_id: UserID, _auth: crate::auth::Auth) -> SessionID {
+    pub async fn create_session(
+        &self,
+        for_username: String,
+        _auth: crate::auth::Auth,
+    ) -> SessionID {
         let session_id: SessionID =
             crate::blog::get_random_hex_string::<{ crate::blog::SESSION_ID_BYTES }>();
         let new_session = Session {
-            for_user_id,
+            for_username,
             expires_at: std::time::Instant::now() + crate::blog::SESSION_EXPIRED_AFTER,
         };
 
