@@ -2,7 +2,7 @@ use crate::blog::{PostID, STORE_PATH};
 use axum::extract::Path;
 use axum::http::StatusCode;
 
-pub async fn get(Path(post_id): Path<PostID>) -> Result<String, StatusCode> {
+pub(super) async fn get(Path(post_id): Path<PostID>) -> Result<String, StatusCode> {
     let file = match tokio::fs::read_to_string(
         std::path::Path::new(STORE_PATH)
             .join(&post_id)

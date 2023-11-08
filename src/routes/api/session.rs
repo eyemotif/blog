@@ -11,7 +11,7 @@ pub struct LoginCredentials {
     pub password: String,
 }
 
-pub async fn post(
+pub(super) async fn post(
     State(state): SharedState,
     Json(login_credentials): Json<LoginCredentials>,
 ) -> Result<SessionID, StatusCode> {

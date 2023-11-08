@@ -3,7 +3,7 @@ use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::Json;
 
-pub async fn get(Path(username): Path<String>) -> Result<Json<User>, StatusCode> {
+pub(super) async fn get(Path(username): Path<String>) -> Result<Json<User>, StatusCode> {
     let file =
         match tokio::fs::read(std::path::Path::new(STORE_PATH).join(format!("{username}.json")))
             .await
