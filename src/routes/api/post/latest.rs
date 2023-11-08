@@ -61,7 +61,12 @@ pub(super) async fn get(
 
     let mut latest_posts = Vec::new();
     for post in latest_post_ids {
-        latest_posts.push(super::meta::get(Path(post)).await?.0);
+        let post = super::meta::get(Path(post)).await?.0;
+        if post.in_progress {
+            continue;
+        }
+
+        latest_posts.push(post);
     }
 
     // TODO: is this sorted correctly?
