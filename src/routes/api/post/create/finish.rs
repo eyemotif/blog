@@ -9,6 +9,7 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 pub struct PostFinishOptions {
     post_id: PostID,
+    text: String,
 }
 
 pub(super) async fn put(
@@ -36,10 +37,18 @@ pub(super) async fn put(
         ..post
     };
 
+    let post_folder_path = std::path::Path::new(crate::blog::STORE_PATH).join(&options.post_id);
+
+    match tokio::fs::write(post_folder_path.join("text.md"), options.text).await {
+        Ok(()) => (),
+        Err(err) => {
+            eprintln!("Error writing text for post {}: {err}", options.post_id);
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
+    }
+
     match tokio::fs::write(
-        std::path::Path::new(crate::blog::STORE_PATH)
-            .join(&options.post_id)
-            .join("meta.json"),
+        post_folder_path.join("meta.json"),
         serde_json::to_vec(&new_post).expect("post meta should serialize"),
     )
     .await
