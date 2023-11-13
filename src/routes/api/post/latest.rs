@@ -50,6 +50,10 @@ pub(super) async fn get(
     let mut latest_post_ids = Vec::new();
 
     for user in users {
+        if user.posts.is_empty() {
+            continue;
+        }
+
         // posts are in reverse chronological order
         latest_post_ids
             .extend_from_slice(&user.posts[user.posts.len().saturating_sub(posts_to_read)..]);

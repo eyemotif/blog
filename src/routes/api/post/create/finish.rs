@@ -12,7 +12,7 @@ pub struct PostFinishOptions {
     text: String,
 }
 
-pub(super) async fn put(
+pub(super) async fn post(
     State(state): SharedState,
     Query(query): Query<SessionQuery>,
     Json(options): Json<PostFinishOptions>,
@@ -28,12 +28,17 @@ pub(super) async fn put(
             Ok(Json(it)) => it,
             Err(err) => return err,
         };
+
+    if !post.in_progress {
+        return StatusCode::NOT_FOUND;
+    }
     if post.author_username != session.for_username {
         return StatusCode::FORBIDDEN;
     }
 
     let new_post = Post {
-        in_progress: true,
+        in_progress: false,
+        timestamp: chrono::Utc::now(),
         ..post
     };
 

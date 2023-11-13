@@ -13,6 +13,7 @@ pub const SESSION_EXPIRED_AFTER: std::time::Duration = std::time::Duration::from
 pub struct User {
     pub username: String,
     pub name: String,
+    // in reverse chronological order
     pub posts: Vec<PostID>,
 }
 

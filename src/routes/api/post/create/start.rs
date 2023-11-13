@@ -1,13 +1,15 @@
-use crate::blog::{PostID, SessionID};
+use crate::blog::PostID;
 use crate::routes::api::SessionQuery;
 use crate::state::SharedState;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct PostOptions {
+    #[serde(default)]
     reply_to: Option<PostID>,
 }
 
@@ -15,9 +17,9 @@ pub(super) async fn post(
     State(state): SharedState,
     Query(query): Query<SessionQuery>,
     Json(options): Json<PostOptions>,
-) -> StatusCode {
+) -> Result<Response, StatusCode> {
     let Some(session) = state.get_session(&query.session).await else {
-        return StatusCode::UNAUTHORIZED;
+        return Err(StatusCode::UNAUTHORIZED);
     };
 
     let new_post_id = crate::blog::get_random_hex_string::<{ crate::blog::POST_ID_BYTES }>();
@@ -27,12 +29,12 @@ pub(super) async fn post(
         Ok(()) => (),
         Err(err) => {
             eprintln!("Could not create folder for post {new_post_id}: {err}");
-            return StatusCode::INTERNAL_SERVER_ERROR;
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     }
 
     let new_post_meta = crate::blog::Post {
-        id: new_post_id,
+        id: new_post_id.clone(),
         author_username: session.for_username,
         timestamp: chrono::Utc::now(),
         reply_to: options.reply_to,
@@ -50,9 +52,9 @@ pub(super) async fn post(
         Ok(()) => (),
         Err(err) => {
             eprintln!("Could not create meta {post_path:?}: {err}");
-            return StatusCode::INTERNAL_SERVER_ERROR;
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     }
 
-    StatusCode::CREATED
+    Ok((StatusCode::CREATED, new_post_id).into_response())
 }
