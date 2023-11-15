@@ -12,11 +12,15 @@ mod state;
 async fn main() {
     let state = std::sync::Arc::new(state::State::new());
 
-    let cors = CorsLayer::new().allow_origin(tower_http::cors::Any);
+    // TODO: proper CORS setup
+    let cors = CorsLayer::new()
+        .allow_origin(tower_http::cors::AllowOrigin::exact(
+            axum::http::HeaderValue::from_static("https://frith.gay"),
+        ))
+        .allow_headers(tower_http::cors::Any);
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(
         axum::Router::new()
-            .nest("/", routes::page::route())
             .nest("/api", routes::api::route())
             .with_state(state)
             .layer(cors),

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub type PostID = String;
 pub type SessionID = String;
 
-pub const STORE_PATH: &str = "/Users/iris/Documents/Rust/Frith/blog/test-store";
+pub const STORE_PATH: &str = "/home/shared/frith-store/blog";
 pub const POST_ID_BYTES: usize = 16;
 pub const SESSION_ID_BYTES: usize = 32;
 pub const SESSION_EXPIRED_AFTER: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24);
