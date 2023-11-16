@@ -7,17 +7,13 @@ use axum::http::StatusCode;
 use axum::response::Response;
 use axum::Json;
 use serde::Deserialize;
+use std::os::unix::ffi::OsStrExt;
+use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use tokio::io::AsyncWriteExt;
 
 const IMAGE_SOCKET_TTL: Duration = Duration::from_secs(60);
 const IMAGE_SOCKET_MESSAGE_TTL: Duration = Duration::from_secs(1);
-
-#[derive(Debug, Deserialize)]
-pub struct ImageCreationOptions {
-    post_id: PostID,
-    name: String,
-}
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type")]
@@ -30,15 +26,17 @@ enum ImageSocketMessage {
 
 pub(super) async fn post(
     State(state): SharedState,
-    ws: WebSocketUpgrade,
+    Path((post_id, image_name)): Path<(PostID, PathBuf)>,
     Query(query): Query<SessionQuery>,
-    Json(options): Json<ImageCreationOptions>,
-) -> Result<Response, StatusCode> {
+) -> Result<String, StatusCode> {
     let Some(session) = state.get_session(&query.session).await else {
         return Err(StatusCode::UNAUTHORIZED);
     };
+    let Some(image_name) = image_name.file_name() else {
+        return Err(StatusCode::BAD_REQUEST);
+    };
 
-    let post = crate::routes::api::post::meta::get(Path(options.post_id.clone()))
+    let post = crate::routes::api::post::meta::get(Path(post_id.clone()))
         .await?
         .0;
 
@@ -48,15 +46,16 @@ pub(super) async fn post(
     if post.author_username != session.for_username {
         return Err(StatusCode::FORBIDDEN);
     }
-    if options.name.len() > 100 {
+
+    if image_name.len() > 100 {
         // dumb filename length cap
         return Err(StatusCode::BAD_REQUEST);
     }
 
     let image_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
-        .join(&options.post_id)
-        .join(options.name);
+        .join(&post_id)
+        .join(image_name);
     match tokio::fs::write(&image_path, Vec::new()).await {
         Ok(()) => (),
         Err(err) => {
@@ -65,7 +64,22 @@ pub(super) async fn post(
         }
     }
 
-    Ok(ws.on_upgrade(move |socket| handle_image_socket(socket, image_path)))
+    Ok(urlencoding::encode_binary(&file_url_bytes(&post_id, image_name)).into_owned())
+}
+
+pub(super) async fn ws(
+    Path((post_id, image_name)): Path<(PostID, String)>,
+    socket: WebSocketUpgrade,
+) -> Response {
+    socket.on_upgrade(|socket| {
+        handle_image_socket(
+            socket,
+            std::path::Path::new(crate::blog::STORE_PATH)
+                .join("post")
+                .join(post_id)
+                .join(image_name),
+        )
+    })
 }
 
 async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathBuf) {
@@ -140,4 +154,13 @@ async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathB
     }
 
     _ = tokio::time::timeout(Duration::from_secs(5), socket.close()).await;
+}
+
+fn file_url_bytes(post_id: &PostID, image_name: &std::ffi::OsStr) -> Vec<u8> {
+    let mut bytes = b"/api/post/image/".to_vec();
+    bytes.extend_from_slice(post_id.as_bytes());
+    bytes.push(b'/');
+    bytes.extend_from_slice(image_name.as_bytes());
+
+    bytes
 }

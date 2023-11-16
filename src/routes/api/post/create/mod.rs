@@ -8,6 +8,9 @@ mod start;
 pub fn route() -> NestedRouter {
     axum::Router::new()
         .route("/start", post(start::post))
-        .route("/image", post(image::post))
+        .route(
+            "/image/:postid/:filename",
+            post(image::post).on(axum::routing::MethodFilter::all(), image::ws),
+        )
         .route("/finish", post(finish::post))
 }
