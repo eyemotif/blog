@@ -1,6 +1,5 @@
 use crate::blog::{Post, PostID, SessionID};
 use std::collections::HashMap;
-use std::f32::MAX_10_EXP;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
