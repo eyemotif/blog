@@ -48,6 +48,10 @@ pub(super) async fn post(
     if post.author_username != session.for_username {
         return Err(StatusCode::FORBIDDEN);
     }
+    if options.name.len() > 100 {
+        // dumb filename length cap
+        return Err(StatusCode::BAD_REQUEST);
+    }
 
     let image_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
