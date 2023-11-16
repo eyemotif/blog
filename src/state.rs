@@ -76,7 +76,18 @@ impl State {
         }
 
         for stale_post_id in stale_post_ids {
-            posts.remove(&stale_post_id);
+            match tokio::fs::remove_dir_all(
+                std::path::Path::new(crate::blog::STORE_PATH)
+                    .join("post")
+                    .join(&stale_post_id),
+            )
+            .await
+            {
+                Ok(()) => {
+                    posts.remove(&stale_post_id);
+                }
+                Err(err) => eprintln!("Error cleaning up stale post {stale_post_id}: {err}"),
+            }
         }
     }
 }
