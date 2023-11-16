@@ -8,6 +8,7 @@ pub(super) async fn get(
 ) -> Result<Json<crate::blog::Post>, StatusCode> {
     let file = match tokio::fs::read(
         std::path::Path::new(STORE_PATH)
+            .join("post")
             .join(&post_id)
             .join("meta.json"),
     )

@@ -30,7 +30,7 @@ pub(super) async fn post(
         };
 
     if !post.in_progress {
-        return StatusCode::NOT_FOUND;
+        return StatusCode::CONFLICT;
     }
     if post.author_username != session.for_username {
         return StatusCode::FORBIDDEN;
@@ -46,7 +46,9 @@ pub(super) async fn post(
         ..post
     };
 
-    let post_folder_path = std::path::Path::new(crate::blog::STORE_PATH).join(&options.post_id);
+    let post_folder_path = std::path::Path::new(crate::blog::STORE_PATH)
+        .join("post")
+        .join(&options.post_id);
 
     match tokio::fs::write(post_folder_path.join("text.md"), options.text).await {
         Ok(()) => (),

@@ -6,6 +6,7 @@ use axum::response::{Html, IntoResponse, Response};
 pub(super) async fn get(Path(post_id): Path<PostID>) -> Result<Response, StatusCode> {
     let file = match tokio::fs::read_to_string(
         std::path::Path::new(STORE_PATH)
+            .join("post")
             .join(&post_id)
             .join("text.md"),
     )

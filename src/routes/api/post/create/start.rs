@@ -23,7 +23,9 @@ pub(super) async fn post(
     };
 
     let new_post_id = crate::blog::get_random_hex_string::<{ crate::blog::POST_ID_BYTES }>();
-    let post_path = std::path::Path::new(crate::blog::STORE_PATH).join(&new_post_id);
+    let post_path = std::path::Path::new(crate::blog::STORE_PATH)
+        .join("post")
+        .join(&new_post_id);
 
     match tokio::fs::create_dir(&post_path).await {
         Ok(()) => (),

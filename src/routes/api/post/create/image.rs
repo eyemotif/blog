@@ -50,6 +50,7 @@ pub(super) async fn post(
     }
 
     let image_path = std::path::Path::new(crate::blog::STORE_PATH)
+        .join("post")
         .join(&options.post_id)
         .join(options.name);
     match tokio::fs::write(&image_path, Vec::new()).await {
