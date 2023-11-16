@@ -17,7 +17,7 @@ pub struct User {
     pub posts: Vec<PostID>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Post {
     pub id: PostID,
     pub author_username: String,

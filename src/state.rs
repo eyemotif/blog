@@ -1,5 +1,6 @@
-use crate::blog::SessionID;
+use crate::blog::{Post, PostID, SessionID};
 use std::collections::HashMap;
+use std::f32::MAX_10_EXP;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -9,6 +10,7 @@ pub type NestedRouter = axum::Router<Arc<State>>;
 #[derive(Debug)]
 pub struct State {
     pub sessions: RwLock<HashMap<SessionID, Session>>,
+    pub posts_in_progress: RwLock<HashMap<PostID, Post>>,
 }
 
 #[derive(Debug, Clone)]
@@ -21,6 +23,7 @@ impl State {
     pub fn new() -> State {
         State {
             sessions: RwLock::new(HashMap::new()),
+            posts_in_progress: RwLock::new(HashMap::new()),
         }
     }
     pub async fn get_session(&self, session_id: &SessionID) -> Option<Session> {
@@ -50,6 +53,32 @@ impl State {
             .insert(session_id.clone(), new_session);
 
         session_id
+    }
+
+    pub async fn cleanup_stale_posts(&self) {
+        let max_in_progress_post_age = chrono::Duration::days(1);
+
+        let now = chrono::Utc::now();
+        let mut posts = self.posts_in_progress.write().await;
+
+        let stale_post_ids = posts
+            .iter()
+            .filter_map(|(id, post)| {
+                let elapsed = now - post.timestamp;
+                (elapsed >= max_in_progress_post_age).then(|| id.clone())
+            })
+            .collect::<Vec<_>>();
+
+        if !stale_post_ids.is_empty() {
+            println!(
+                "found {} stale in-progress posts, deleting them now",
+                stale_post_ids.len()
+            );
+        }
+
+        for stale_post_id in stale_post_ids {
+            posts.remove(&stale_post_id);
+        }
     }
 }
 

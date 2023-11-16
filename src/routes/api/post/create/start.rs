@@ -45,6 +45,14 @@ pub(super) async fn post(
         in_progress: true,
     };
 
+    state
+        .posts_in_progress
+        .write()
+        .await
+        .insert(new_post_id.clone(), new_post_meta.clone());
+
+    tokio::spawn(async move { state.clone().cleanup_stale_posts().await });
+
     match tokio::fs::write(
         post_path.join("meta.json"),
         serde_json::to_vec(&new_post_meta).expect("value should serialize"),

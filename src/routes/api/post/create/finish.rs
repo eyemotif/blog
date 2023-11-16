@@ -21,13 +21,10 @@ pub(super) async fn post(
         return StatusCode::UNAUTHORIZED;
     };
 
-    let post =
-        match crate::routes::api::post::meta::get(axum::extract::Path(options.post_id.clone()))
-            .await
-        {
-            Ok(Json(it)) => it,
-            Err(err) => return err,
-        };
+    let mut posts_in_progress = state.posts_in_progress.write().await;
+    let Some(post) = posts_in_progress.get(&options.post_id).cloned() else {
+        return StatusCode::NOT_FOUND;
+    };
 
     if !post.in_progress {
         return StatusCode::CONFLICT;
@@ -35,7 +32,6 @@ pub(super) async fn post(
     if post.author_username != session.for_username {
         return StatusCode::FORBIDDEN;
     }
-
     if options.text.trim().is_empty() {
         return StatusCode::BAD_REQUEST;
     }
@@ -98,6 +94,8 @@ pub(super) async fn post(
             return StatusCode::INTERNAL_SERVER_ERROR;
         }
     }
+
+    posts_in_progress.remove(&options.post_id);
 
     StatusCode::OK
 }
