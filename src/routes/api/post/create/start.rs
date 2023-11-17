@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::blog::PostID;
 use crate::routes::api::SessionQuery;
 use crate::state::SharedState;
@@ -45,11 +47,13 @@ pub(super) async fn post(
         in_progress: true,
     };
 
-    state
-        .posts_in_progress
-        .write()
-        .await
-        .insert(new_post_id.clone(), new_post_meta.clone());
+    state.posts_in_progress.write().await.insert(
+        new_post_id.clone(),
+        crate::state::IncompletePost {
+            meta: new_post_meta.clone(),
+            jobs_left: HashSet::from_iter([crate::job::PostJob::AddText]),
+        },
+    );
 
     tokio::spawn(async move { state.clone().cleanup_stale_posts().await });
 

@@ -5,6 +5,7 @@ use tower_http::normalize_path::NormalizePathLayer;
 
 mod auth;
 mod blog;
+mod job;
 mod routes;
 mod state;
 
@@ -12,7 +13,6 @@ mod state;
 async fn main() {
     let state = std::sync::Arc::new(state::State::new());
 
-    // TODO: proper CORS setup
     let cors = CorsLayer::new()
         .allow_origin(tower_http::cors::AllowOrigin::exact(
             axum::http::HeaderValue::from_static("https://frith.gay"),

@@ -22,14 +22,15 @@ pub(super) async fn post(
     };
     let image_name = std::path::Path::new(&image_name);
 
-    let post = crate::routes::api::post::meta::get(Path(post_id.clone()))
-        .await?
-        .0;
+    let mut posts_in_progress = state.posts_in_progress.write().await;
+    let Some(post) = posts_in_progress.get_mut(&post_id) else {
+        return Err(StatusCode::NOT_FOUND);
+    };
 
-    if !post.in_progress {
+    if !post.meta.in_progress {
         return Err(StatusCode::NOT_FOUND);
     }
-    if post.author_username != session.for_username {
+    if post.meta.author_username != session.for_username {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -52,6 +53,7 @@ pub(super) async fn post(
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     }
+    post.jobs_left.insert(crate::job::PostJob::ResizeImages);
 
     Ok(format!(
         "/api/post/image/{post_id}/{}",

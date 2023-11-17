@@ -73,7 +73,6 @@ pub(super) async fn get(
         latest_posts.push(post);
     }
 
-    // TODO: is this sorted correctly?
     latest_posts.sort_unstable_by(|a, b| a.timestamp.cmp(&b.timestamp).reverse());
     let latest_posts = latest_posts.into_iter().skip(after).take(amount).collect();
 

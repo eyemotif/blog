@@ -21,32 +21,35 @@ pub(super) async fn post(
         return StatusCode::UNAUTHORIZED;
     };
 
-    let mut posts_in_progress = state.posts_in_progress.write().await;
-    let Some(post) = posts_in_progress.get(&options.post_id).cloned() else {
+    let Some(mut post) = state
+        .posts_in_progress
+        .write()
+        .await
+        .remove(&options.post_id)
+    else {
         return StatusCode::NOT_FOUND;
     };
 
-    if !post.in_progress {
-        return StatusCode::CONFLICT;
+    if !post.meta.in_progress {
+        eprintln!("Completed post {} in in-progress post list!", post.meta.id);
+        return StatusCode::INTERNAL_SERVER_ERROR;
     }
-    if post.author_username != session.for_username {
+    if post.meta.author_username != session.for_username {
         return StatusCode::FORBIDDEN;
     }
     if options.text.trim().is_empty() {
         return StatusCode::BAD_REQUEST;
     }
 
-    let new_post = Post {
-        in_progress: false,
-        timestamp: chrono::Utc::now(),
-        ..post
-    };
-
-    let post_folder_path = std::path::Path::new(crate::blog::STORE_PATH)
-        .join("post")
-        .join(&options.post_id);
-
-    match tokio::fs::write(post_folder_path.join("text.md"), options.text).await {
+    match tokio::fs::write(
+        std::path::Path::new(crate::blog::STORE_PATH)
+            .join("post")
+            .join(&post.meta.id)
+            .join("text.md"),
+        options.text,
+    )
+    .await
+    {
         Ok(()) => (),
         Err(err) => {
             eprintln!("Error writing text for post {}: {err}", options.post_id);
@@ -54,48 +57,8 @@ pub(super) async fn post(
         }
     }
 
-    match tokio::fs::write(
-        post_folder_path.join("meta.json"),
-        serde_json::to_vec(&new_post).expect("post meta should serialize"),
-    )
-    .await
-    {
-        Ok(()) => (),
-        Err(err) => {
-            eprintln!("Error writing meta for post {}: {err}", options.post_id);
-            return StatusCode::INTERNAL_SERVER_ERROR;
-        }
-    }
-
-    let mut user = match crate::routes::api::user::get(axum::extract::Path(
-        session.for_username.clone(),
-    ))
-    .await
-    {
-        Ok(Json(it)) => it,
-        Err(err) => return err,
-    };
-    user.posts.push(options.post_id.clone());
-
-    match tokio::fs::write(
-        std::path::Path::new(STORE_PATH)
-            .join("user")
-            .join(format!("{}.json", session.for_username)),
-        serde_json::to_vec(&user).expect("user should serialize"),
-    )
-    .await
-    {
-        Ok(()) => (),
-        Err(err) => {
-            eprintln!(
-                "Error writing updated user data for user {} post {}: {err}",
-                options.post_id, session.for_username
-            );
-            return StatusCode::INTERNAL_SERVER_ERROR;
-        }
-    }
-
-    posts_in_progress.remove(&options.post_id);
+    post.jobs_left.remove(&crate::job::PostJob::AddText);
+    tokio::task::spawn(async move { state.complete_post(post).await });
 
     StatusCode::OK
 }

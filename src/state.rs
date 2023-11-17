@@ -1,5 +1,6 @@
 use crate::blog::{Post, PostID, SessionID};
-use std::collections::HashMap;
+use crate::job::PostJob;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -9,13 +10,70 @@ pub type NestedRouter = axum::Router<Arc<State>>;
 #[derive(Debug)]
 pub struct State {
     pub sessions: RwLock<HashMap<SessionID, Session>>,
-    pub posts_in_progress: RwLock<HashMap<PostID, Post>>,
+    pub posts_in_progress: RwLock<HashMap<PostID, IncompletePost>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Session {
     pub for_username: String,
     pub expires_at: std::time::Instant,
+}
+
+#[derive(Debug, Clone)]
+pub struct IncompletePost {
+    pub meta: Post,
+    pub jobs_left: HashSet<PostJob>,
+}
+
+async fn write_post(post: &Post) {
+    let post_folder_path = std::path::Path::new(crate::blog::STORE_PATH)
+        .join("post")
+        .join(&post.id);
+
+    match tokio::fs::write(
+        post_folder_path.join("meta.json"),
+        serde_json::to_vec(post).expect("post meta should serialize"),
+    )
+    .await
+    {
+        Ok(()) => (),
+        Err(err) => {
+            eprintln!("Error writing meta for post {}: {err}", post.id);
+        }
+    }
+
+    let user_path = std::path::Path::new(crate::blog::STORE_PATH)
+        .join("user")
+        .join(&post.author_username);
+
+    let mut user = match tokio::fs::read(&user_path).await {
+        Ok(it) => {
+            serde_json::from_slice::<crate::blog::User>(&it).expect("user should deserialize")
+        }
+        Err(err) => {
+            eprintln!(
+                "Error reading author for user {} post {}: {err}",
+                post.author_username, post.id
+            );
+            return;
+        }
+    };
+    user.posts.push(post.id.clone());
+
+    match tokio::fs::write(
+        &user_path,
+        serde_json::to_vec(&user).expect("user should serialize"),
+    )
+    .await
+    {
+        Ok(()) => (),
+        Err(err) => {
+            eprintln!(
+                "Error writing updated user data for user {} post {}: {err}",
+                post.author_username, post.id
+            );
+        }
+    }
 }
 
 impl State {
@@ -55,7 +113,7 @@ impl State {
     }
 
     pub async fn cleanup_stale_posts(&self) {
-        let max_in_progress_post_age = chrono::Duration::days(1);
+        let max_in_progress_post_age = chrono::Duration::minutes(30);
 
         let now = chrono::Utc::now();
         let mut posts = self.posts_in_progress.write().await;
@@ -63,7 +121,7 @@ impl State {
         let stale_post_ids = posts
             .iter()
             .filter_map(|(id, post)| {
-                let elapsed = now - post.timestamp;
+                let elapsed = now - post.meta.timestamp;
                 (elapsed >= max_in_progress_post_age).then(|| id.clone())
             })
             .collect::<Vec<_>>();
@@ -89,6 +147,33 @@ impl State {
                 Err(err) => eprintln!("Error cleaning up stale post {stale_post_id}: {err}"),
             }
         }
+    }
+
+    pub async fn complete_post(&self, post: IncompletePost) {
+        let post = Arc::new(RwLock::new(post));
+
+        if post.read().await.jobs_left.contains(&PostJob::ResizeImages) {
+            let spawn_post = post.clone();
+            tokio::task::spawn_blocking(move || {
+                crate::job::downsize_images(&spawn_post.blocking_read().meta)
+            })
+            .await
+            .expect("task should not panic");
+
+            post.write().await.jobs_left.remove(&PostJob::ResizeImages);
+        }
+
+        let post = Arc::into_inner(post)
+            .expect("arc should have no refs")
+            .into_inner();
+
+        let new_post = Post {
+            in_progress: false,
+            timestamp: chrono::Utc::now(),
+            ..post.meta
+        };
+
+        write_post(&new_post).await;
     }
 }
 
