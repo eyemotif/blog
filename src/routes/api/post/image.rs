@@ -24,9 +24,9 @@ pub(super) async fn get(
         .join(if options.raw {
             image.clone()
         } else if options.large {
-            format!("{image}.thumb.large")
+            format!("tl-{image}")
         } else {
-            format!("{image}.thumb")
+            format!("ts-{image}")
         });
 
     let file = match tokio::fs::File::open(&image_file_path).await {
