@@ -8,45 +8,71 @@ pub fn run(post: &crate::blog::Post) {
         .join("image");
 
     for image_name in &post.images {
-        let small_thumb =
-            match create_thumb(&image_path.join("small").join(image_name), SMALL_THUMB_SIZE) {
-                Ok(it) => it,
-                Err(err) => {
-                    eprintln!(
-                        "Error creating small thumbnail for image {image_name} for post {}: {err}",
-                        post.id
-                    );
-                    continue;
-                }
-            };
-        let large_thumb =
-            match create_thumb(&image_path.join("large").join(image_name), LARGE_THUMB_SIZE) {
-                Ok(it) => it,
-                Err(err) => {
-                    eprintln!(
-                        "Error creating large thumbnail for image {image_name} for post {}: {err}",
-                        post.id
-                    );
-                    continue;
-                }
-            };
+        let raw_path = image_path.join("raw").join(&image_name);
+        let small_path = image_path.join("small").join(&image_name);
+        let large_path = image_path.join("large").join(&image_name);
 
-        match small_thumb.save(image_path.join("small").join(image_name)) {
-            Ok(()) => (),
+        let small_thumb = match create_thumb(&raw_path, SMALL_THUMB_SIZE) {
+            Ok(it) => it,
             Err(err) => {
                 eprintln!(
-                    "Error writing small thumbnail for image {image_name} for post {}: {err}",
+                    "Error creating small thumbnail for image {image_name} for post {}: {err}",
                     post.id
                 );
+                continue;
+            }
+        };
+        let large_thumb = match create_thumb(&raw_path, LARGE_THUMB_SIZE) {
+            Ok(it) => it,
+            Err(err) => {
+                eprintln!(
+                    "Error creating large thumbnail for image {image_name} for post {}: {err}",
+                    post.id
+                );
+                continue;
+            }
+        };
+
+        if let Some(small_thumb) = small_thumb {
+            match small_thumb.save(&small_path) {
+                Ok(()) => (),
+                Err(err) => {
+                    eprintln!(
+                        "Error writing small thumbnail for image {image_name} for post {}: {err}",
+                        post.id
+                    );
+                }
+            }
+        } else {
+            match std::fs::copy(&raw_path, &small_path) {
+                Ok(_) => (),
+                Err(err) => {
+                    eprintln!(
+                        "Error writing small copy for image {image_name} for post {}: {err}",
+                        post.id
+                    );
+                }
             }
         }
-        match large_thumb.save(image_path.join("large").join(image_name)) {
-            Ok(()) => (),
-            Err(err) => {
-                eprintln!(
-                    "Error writing large thumbnail for image {image_name} for post {}: {err}",
-                    post.id
-                );
+        if let Some(large_thumb) = large_thumb {
+            match large_thumb.save(&large_path) {
+                Ok(()) => (),
+                Err(err) => {
+                    eprintln!(
+                        "Error writing large thumbnail for image {image_name} for post {}: {err}",
+                        post.id
+                    );
+                }
+            }
+        } else {
+            match std::fs::copy(&raw_path, &large_path) {
+                Ok(_) => (),
+                Err(err) => {
+                    eprintln!(
+                        "Error writing large copy for image {image_name} for post {}: {err}",
+                        post.id
+                    );
+                }
             }
         }
     }
@@ -56,25 +82,20 @@ pub fn run(post: &crate::blog::Post) {
 fn create_thumb(
     image_path: &std::path::Path,
     max_size: u32,
-) -> Result<image::DynamicImage, Box<dyn std::error::Error>> {
+) -> Result<Option<image::DynamicImage>, Box<dyn std::error::Error>> {
     let image = image::io::Reader::open(image_path)?;
     let image = image.with_guessed_format()?;
 
     match image.format().expect("image should have format") {
-        image::ImageFormat::Png => (), // TODO: apng
-        image::ImageFormat::Gif => {
-            // HACK: resize_to_fill breaks animated GIFs, so we just won't resize them
-            // as theyre usually small anyway
-            let image = image.decode()?;
-
-            return Ok(image);
-        }
+        image::ImageFormat::Png => (),              // TODO: apng
+        image::ImageFormat::Gif => return Ok(None), // HACK: resize_to_fill breaks animated GIFs, so we just won't resize them
+        // as theyre usually small anyway
         image::ImageFormat::WebP => (), // TODO: animated webp
         _ => (),
     }
 
     let image = image.decode()?;
-    Ok(create_thumb_static(image, max_size))
+    Ok(Some(create_thumb_static(image, max_size)))
 }
 
 fn create_thumb_static(image: image::DynamicImage, max_size: u32) -> image::DynamicImage {
