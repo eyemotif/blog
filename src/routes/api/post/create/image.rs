@@ -53,6 +53,9 @@ pub(super) async fn post(
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     }
+
+    // writing to meta.json is unnecessary because of state::complete_post
+    post.meta.images.push(image_name.to_os_string());
     post.jobs_left.insert(crate::job::PostJob::Thumbnails);
 
     Ok(format!(

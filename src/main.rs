@@ -12,6 +12,9 @@ mod state;
 #[tokio::main]
 async fn main() {
     let state = std::sync::Arc::new(state::State::new());
+    reprocess_posts(state.clone())
+        .await
+        .expect("error reprocessing in-progress posts");
 
     let cors = CorsLayer::new()
         .allow_origin(tower_http::cors::AllowOrigin::exact(
@@ -30,4 +33,28 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .expect("Error serving app")
+}
+
+async fn reprocess_posts(state: std::sync::Arc<crate::state::State>) -> std::io::Result<()> {
+    let posts_folder = std::path::Path::new(crate::blog::STORE_PATH).join("post");
+    let mut dir = tokio::fs::read_dir(&posts_folder).await?;
+
+    while let Some(entry) = dir.next_entry().await? {
+        let meta = tokio::fs::read(entry.path().join("meta.json")).await?;
+        let meta = serde_json::from_slice::<crate::blog::Post>(&meta)
+            .expect("post metadata should deserialize");
+
+        if meta.in_progress {
+            println!("Found in-progress post: {}", meta.id);
+
+            state
+                .complete_post(crate::state::IncompletePost {
+                    meta,
+                    jobs_left: crate::job::PostJob::all_processing_jobs(),
+                })
+                .await;
+        }
+    }
+
+    Ok(())
 }
