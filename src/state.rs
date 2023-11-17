@@ -44,7 +44,7 @@ async fn write_post(post: &Post) {
 
     let user_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("user")
-        .join(&post.author_username);
+        .join(format!("{}.json", post.author_username));
 
     let mut user = match tokio::fs::read(&user_path).await {
         Ok(it) => {
