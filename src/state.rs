@@ -155,7 +155,7 @@ impl State {
         if post.read().await.jobs_left.contains(&PostJob::Thumbnails) {
             let spawn_post = post.clone();
             tokio::task::spawn_blocking(move || {
-                crate::job::create_thumbs(&spawn_post.blocking_read().meta)
+                crate::job::thumbnails::run(&spawn_post.blocking_read().meta)
             })
             .await
             .expect("task should not panic");
