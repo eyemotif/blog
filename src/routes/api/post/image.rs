@@ -1,17 +1,29 @@
 use crate::blog::PostID;
 use axum::body::StreamBody;
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use serde::Deserialize;
 use tokio_util::io::ReaderStream;
+
+#[derive(Debug, Deserialize)]
+pub(super) struct ImageQueryOptions {
+    #[serde(default)]
+    pub raw: bool,
+}
 
 pub(super) async fn get(
     Path((post, image)): Path<(PostID, String)>,
+    Query(options): Query<ImageQueryOptions>,
 ) -> Result<Response, StatusCode> {
     let image_file_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
         .join(&post)
-        .join(&image);
+        .join(if options.raw {
+            image.clone()
+        } else {
+            format!("{image}.thumb")
+        });
 
     let file = match tokio::fs::File::open(&image_file_path).await {
         Ok(it) => it,
