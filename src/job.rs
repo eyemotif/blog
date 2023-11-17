@@ -56,7 +56,7 @@ pub fn create_thumbs(post: &Post) {
         let small_thumb = create_thumb(image.clone(), 128);
         let large_thumb = create_thumb(image, 512);
 
-        match small_thumb.save(post_path.join(format!("ts-{image_name}"))) {
+        match small_thumb.save(post_path.join("image").join("small").join(image_name)) {
             Ok(()) => (),
             Err(err) => {
                 eprintln!(
@@ -65,7 +65,7 @@ pub fn create_thumbs(post: &Post) {
                 );
             }
         }
-        match large_thumb.save(post_path.join(format!("tl-{image_name}"))) {
+        match large_thumb.save(post_path.join("image").join("large").join(image_name)) {
             Ok(()) => (),
             Err(err) => {
                 eprintln!(

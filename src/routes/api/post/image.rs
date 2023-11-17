@@ -21,13 +21,15 @@ pub(super) async fn get(
     let image_file_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
         .join(&post)
+        .join("image")
         .join(if options.raw {
-            image.clone()
+            "raw"
         } else if options.large {
-            format!("tl-{image}")
+            "large"
         } else {
-            format!("ts-{image}")
-        });
+            "small"
+        })
+        .join(&image);
 
     let file = match tokio::fs::File::open(&image_file_path).await {
         Ok(it) => it,

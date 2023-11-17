@@ -42,9 +42,46 @@ pub(super) async fn post(
         return Err(StatusCode::BAD_REQUEST);
     }
 
+    if post.meta.images.is_empty() {
+        let post_path = std::path::Path::new(crate::blog::STORE_PATH)
+            .join("post")
+            .join(&post_id);
+
+        match tokio::fs::create_dir(post_path.join("image")).await {
+            Ok(()) => (),
+            Err(err) => {
+                eprintln!("Error creating image folders for post {post_id}: {err}");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+        match tokio::fs::create_dir(post_path.join("image").join("small")).await {
+            Ok(()) => (),
+            Err(err) => {
+                eprintln!("Error creating image folders for post {post_id}: {err}");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+        match tokio::fs::create_dir(post_path.join("image").join("large")).await {
+            Ok(()) => (),
+            Err(err) => {
+                eprintln!("Error creating image folders for post {post_id}: {err}");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+        match tokio::fs::create_dir(post_path.join("image").join("raw")).await {
+            Ok(()) => (),
+            Err(err) => {
+                eprintln!("Error creating image folders for post {post_id}: {err}");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+
     let image_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
         .join(&post_id)
+        .join("image")
+        .join("raw")
         .join(image_name);
     match tokio::fs::write(&image_path, Vec::new()).await {
         Ok(()) => (),
