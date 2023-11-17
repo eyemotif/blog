@@ -152,15 +152,15 @@ impl State {
     pub async fn complete_post(&self, post: IncompletePost) {
         let post = Arc::new(RwLock::new(post));
 
-        if post.read().await.jobs_left.contains(&PostJob::ResizeImages) {
+        if post.read().await.jobs_left.contains(&PostJob::Thumbnails) {
             let spawn_post = post.clone();
             tokio::task::spawn_blocking(move || {
-                crate::job::downsize_images(&spawn_post.blocking_read().meta)
+                crate::job::create_thumbs(&spawn_post.blocking_read().meta)
             })
             .await
             .expect("task should not panic");
 
-            post.write().await.jobs_left.remove(&PostJob::ResizeImages);
+            post.write().await.jobs_left.remove(&PostJob::Thumbnails);
         }
 
         let post = Arc::into_inner(post)

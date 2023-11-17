@@ -53,7 +53,7 @@ pub(super) async fn post(
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     }
-    post.jobs_left.insert(crate::job::PostJob::ResizeImages);
+    post.jobs_left.insert(crate::job::PostJob::Thumbnails);
 
     Ok(format!(
         "/api/post/image/{post_id}/{}",

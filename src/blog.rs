@@ -26,6 +26,7 @@ pub struct Post {
     pub replies: Vec<PostID>,
     pub quotes: Vec<PostID>,
     pub in_progress: bool,
+    pub images: Vec<String>,
 }
 
 pub fn get_random_hex_string<const LEN: usize>() -> String {
