@@ -115,6 +115,8 @@ pub(super) async fn ws(
             std::path::Path::new(crate::blog::STORE_PATH)
                 .join("post")
                 .join(post_id)
+                .join("image")
+                .join("raw")
                 .join(image_name),
         )
     })

@@ -9,6 +9,8 @@ pub enum PostJob {
 fn create_thumb(image: image::DynamicImage, max_size: u32) -> image::DynamicImage {
     let (width, height) = (image.width(), image.height());
 
+    // TODO: decode animated gifs/webps/apng
+
     if height <= max_size && width <= max_size {
         image
     } else {
@@ -17,12 +19,13 @@ fn create_thumb(image: image::DynamicImage, max_size: u32) -> image::DynamicImag
 }
 
 pub fn create_thumbs(post: &Post) {
-    let post_path = std::path::Path::new(crate::blog::STORE_PATH)
+    let image_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
-        .join(&post.id);
+        .join(&post.id)
+        .join("image");
 
     for image_name in &post.images {
-        let image = match image::io::Reader::open(post_path.join(image_name)) {
+        let image = match image::io::Reader::open(image_path.join("raw").join(image_name)) {
             Ok(it) => it,
             Err(err) => {
                 eprintln!(
@@ -56,7 +59,7 @@ pub fn create_thumbs(post: &Post) {
         let small_thumb = create_thumb(image.clone(), 128);
         let large_thumb = create_thumb(image, 512);
 
-        match small_thumb.save(post_path.join("image").join("small").join(image_name)) {
+        match small_thumb.save(image_path.join("small").join(image_name)) {
             Ok(()) => (),
             Err(err) => {
                 eprintln!(
@@ -65,7 +68,7 @@ pub fn create_thumbs(post: &Post) {
                 );
             }
         }
-        match large_thumb.save(post_path.join("image").join("large").join(image_name)) {
+        match large_thumb.save(image_path.join("large").join(image_name)) {
             Ok(()) => (),
             Err(err) => {
                 eprintln!(
