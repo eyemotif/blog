@@ -6,13 +6,24 @@ pub enum PostJob {
     Thumbnails,
 }
 
+fn create_thumb(image: image::DynamicImage, max_size: u32) -> image::DynamicImage {
+    image
+        .resize_to_fill(max_size * 4, max_size, image::imageops::Lanczos3)
+        .crop(
+            (image.width() - max_size) / 2,
+            (image.height() - max_size) / 2,
+            max_size,
+            max_size,
+        )
+}
+
 pub fn create_thumbs(post: &Post) {
     let post_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
         .join(&post.id);
 
     for image_name in &post.images {
-        let image = match image::io::Reader::open(post_path.join(&image_name)) {
+        let image = match image::io::Reader::open(post_path.join(image_name)) {
             Ok(it) => it,
             Err(err) => {
                 eprintln!(
@@ -43,22 +54,23 @@ pub fn create_thumbs(post: &Post) {
             }
         };
 
-        // actual processing of the image
-        let thumb_max_size = 256;
-        let image =
-            image.resize_to_fill(1024, thumb_max_size, image::imageops::FilterType::Lanczos3);
-        let image = image.crop_imm(
-            (image.width() - thumb_max_size) / 2,
-            (image.height() - thumb_max_size) / 2,
-            thumb_max_size,
-            thumb_max_size,
-        );
+        let small_thumb = create_thumb(image.clone(), 256);
+        let large_thumb = create_thumb(image, 512);
 
-        match image.save(post_path.join(format!("{image_name}.thumb"))) {
+        match small_thumb.save(post_path.join(format!("{image_name}.thumb"))) {
             Ok(()) => (),
             Err(err) => {
                 eprintln!(
-                    "Error writing image {image_name} for post {}: {err}",
+                    "Error writing small thumbnail for image {image_name} for post {}: {err}",
+                    post.id
+                );
+            }
+        }
+        match large_thumb.save(post_path.join(format!("{image_name}.thumb.large"))) {
+            Ok(()) => (),
+            Err(err) => {
+                eprintln!(
+                    "Error writing large thumbnail for image {image_name} for post {}: {err}",
                     post.id
                 );
             }

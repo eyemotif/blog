@@ -10,6 +10,8 @@ use tokio_util::io::ReaderStream;
 pub(super) struct ImageQueryOptions {
     #[serde(default)]
     pub raw: bool,
+    #[serde(default)]
+    pub large: bool,
 }
 
 pub(super) async fn get(
@@ -21,6 +23,8 @@ pub(super) async fn get(
         .join(&post)
         .join(if options.raw {
             image.clone()
+        } else if options.large {
+            format!("{image}.thumb.large")
         } else {
             format!("{image}.thumb")
         });
