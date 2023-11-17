@@ -27,7 +27,7 @@ pub fn create_thumbs(post: &Post) {
             Ok(it) => it,
             Err(err) => {
                 eprintln!(
-                    "Error reading image {image_name:?} for post {}: {err}",
+                    "Error reading image {image_name} for post {}: {err}",
                     post.id
                 );
                 continue;
@@ -37,7 +37,7 @@ pub fn create_thumbs(post: &Post) {
             Ok(it) => it,
             Err(err) => {
                 eprintln!(
-                    "Error guessing format for image {image_name:?} for post {}: {err}",
+                    "Error guessing format for image {image_name} for post {}: {err}",
                     post.id
                 );
                 continue;
@@ -47,7 +47,7 @@ pub fn create_thumbs(post: &Post) {
             Ok(it) => it,
             Err(err) => {
                 eprintln!(
-                    "Error decoding image {image_name:?} for post {}: {err}",
+                    "Error decoding image {image_name} for post {}: {err}",
                     post.id
                 );
                 continue;
@@ -57,20 +57,20 @@ pub fn create_thumbs(post: &Post) {
         let small_thumb = create_thumb(image.clone(), 256);
         let large_thumb = create_thumb(image, 512);
 
-        match small_thumb.save(post_path.join(format!("{image_name:?}.thumb"))) {
+        match small_thumb.save(post_path.join(format!("{image_name}.thumb"))) {
             Ok(()) => (),
             Err(err) => {
                 eprintln!(
-                    "Error writing small thumbnail for image {image_name:?} for post {}: {err}",
+                    "Error writing small thumbnail for image {image_name} for post {}: {err}",
                     post.id
                 );
             }
         }
-        match large_thumb.save(post_path.join(format!("{image_name:?}.thumb.large"))) {
+        match large_thumb.save(post_path.join(format!("{image_name}.thumb.large"))) {
             Ok(()) => (),
             Err(err) => {
                 eprintln!(
-                    "Error writing large thumbnail for image {image_name:?} for post {}: {err}",
+                    "Error writing large thumbnail for image {image_name} for post {}: {err}",
                     post.id
                 );
             }

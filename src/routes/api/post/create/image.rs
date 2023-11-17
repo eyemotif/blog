@@ -55,7 +55,11 @@ pub(super) async fn post(
     }
 
     // writing to meta.json is unnecessary because of state::complete_post
-    post.meta.images.push(image_name.to_os_string());
+    // theoretically to_string_lossy should never lose any data as filenames are
+    // ultimately given as strings anyway
+    post.meta
+        .images
+        .push(image_name.to_string_lossy().into_owned());
     post.jobs_left.insert(crate::job::PostJob::Thumbnails);
 
     Ok(format!(
