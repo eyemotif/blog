@@ -49,10 +49,12 @@ async fn reprocess_posts(state: std::sync::Arc<crate::state::State>) -> std::io:
 
             state
                 .complete_post(crate::state::IncompletePost {
-                    meta,
+                    meta: meta.clone(),
                     jobs_left: crate::job::PostJob::all_processing_jobs(),
                 })
                 .await;
+
+            println!("Post {} complete!", meta.id);
         }
     }
 

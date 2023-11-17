@@ -7,14 +7,13 @@ pub enum PostJob {
 }
 
 fn create_thumb(image: image::DynamicImage, max_size: u32) -> image::DynamicImage {
-    image
-        .resize_to_fill(max_size * 4, max_size, image::imageops::Lanczos3)
-        .crop(
-            (image.width() - max_size) / 2,
-            (image.height() - max_size) / 2,
-            max_size,
-            max_size,
-        )
+    let (width, height) = (image.width(), image.height());
+
+    if height <= max_size && width <= max_size {
+        image
+    } else {
+        image.resize_to_fill(max_size, max_size, image::imageops::Lanczos3)
+    }
 }
 
 pub fn create_thumbs(post: &Post) {
@@ -54,7 +53,7 @@ pub fn create_thumbs(post: &Post) {
             }
         };
 
-        let small_thumb = create_thumb(image.clone(), 256);
+        let small_thumb = create_thumb(image.clone(), 128);
         let large_thumb = create_thumb(image, 512);
 
         match small_thumb.save(post_path.join(format!("ts-{image_name}"))) {
