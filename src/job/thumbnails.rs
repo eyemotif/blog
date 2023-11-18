@@ -8,9 +8,9 @@ pub fn run(post: &crate::blog::Post) {
         .join("image");
 
     for image_name in &post.images {
-        let raw_path = image_path.join("raw").join(&image_name);
-        let small_path = image_path.join("small").join(&image_name);
-        let large_path = image_path.join("large").join(&image_name);
+        let raw_path = image_path.join("raw").join(image_name);
+        let small_path = image_path.join("small").join(image_name);
+        let large_path = image_path.join("large").join(image_name);
 
         let small_thumb = match create_thumb(&raw_path, SMALL_THUMB_SIZE) {
             Ok(it) => it,

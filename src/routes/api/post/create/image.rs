@@ -100,7 +100,7 @@ pub(super) async fn post(
     post.jobs_left.insert(crate::job::PostJob::Thumbnails);
 
     Ok(format!(
-        "/api/post/image/{post_id}/{}",
+        "image:{}",
         urlencoding::encode_binary(image_name.as_bytes())
     ))
 }
