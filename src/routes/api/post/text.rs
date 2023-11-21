@@ -2,6 +2,7 @@ use crate::blog::{PostID, STORE_PATH};
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
+use comrak::nodes::NodeValue;
 
 pub(super) async fn get(Path(post_id): Path<PostID>) -> Result<Response, StatusCode> {
     let file = match tokio::fs::read_to_string(
@@ -53,21 +54,23 @@ fn process_nodes<'a>(node: &'a comrak::nodes::AstNode<'a>, post_id: &PostID) {
         process_nodes(child, post_id);
     }
 }
-
 fn process_node<'a>(node: &'a comrak::nodes::AstNode<'a>, post_id: &PostID) {
     match &mut node.data.borrow_mut().value {
-        comrak::nodes::NodeValue::Image(link) => {
+        NodeValue::Image(link) => {
             process_link(link, post_id);
         }
-        comrak::nodes::NodeValue::Link(link) => {
+        NodeValue::Link(link) => {
             process_link(link, post_id);
         }
+        // NodeValue::BlockQuote => {
+        //     println!("{:?}", node.children().collect::<Vec<_>>());
+        // }
         _ => (),
     }
 }
 
 fn process_link(link: &mut comrak::nodes::NodeLink, post_id: &PostID) {
     if let Some(post_image) = link.url.strip_prefix("image:") {
-        link.url = format!("/api/post/image/{post_id}/{post_image}")
+        link.url = format!("/api/post/{post_id}/image/{post_image}")
     }
 }
