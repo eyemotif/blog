@@ -14,8 +14,8 @@ pub fn route() -> NestedRouter {
 
     // TODO: /:id/..
     axum::Router::new()
-        .route("/meta/:id", get(meta::get))
-        .route("/text/:id", get(text::get))
+        .route("/:id/meta/", get(meta::get))
+        .route("/:id/text/", get(text::get))
         .route("/latest/:amount/:after", get(latest::get))
         .route(
             "/:id/image/:img",
