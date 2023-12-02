@@ -1,10 +1,11 @@
-use crate::blog::PostID;
-use crate::routes::api::SessionQuery;
+use crate::blog::{PostID, SessionID};
 use crate::state::SharedState;
 use axum::extract::ws::WebSocket;
-use axum::extract::{Path, Query, State, WebSocketUpgrade};
+use axum::extract::{Path, State, WebSocketUpgrade};
 use axum::http::StatusCode;
 use axum::response::Response;
+use axum::Json;
+use serde::Deserialize;
 use std::os::unix::ffi::OsStrExt;
 use std::time::{Duration, Instant};
 use tokio::io::AsyncWriteExt;
@@ -12,15 +13,21 @@ use tokio::io::AsyncWriteExt;
 const IMAGE_SOCKET_TTL: Duration = Duration::from_secs(60);
 const IMAGE_SOCKET_MESSAGE_TTL: Duration = Duration::from_secs(1);
 
+#[derive(Debug, Deserialize)]
+pub(super) struct ImageUploadOptions {
+    session: SessionID,
+    name: String,
+}
+
 pub(super) async fn post(
     State(state): SharedState,
-    Path((post_id, image_name)): Path<(PostID, String)>,
-    Query(query): Query<SessionQuery>,
+    Path(post_id): Path<PostID>,
+    Json(request): Json<ImageUploadOptions>,
 ) -> Result<String, StatusCode> {
-    let Some(session) = state.get_session(&query.session).await else {
+    let Some(session) = state.get_session(&request.session).await else {
         return Err(StatusCode::UNAUTHORIZED);
     };
-    let image_name = std::path::Path::new(&image_name);
+    let image_name = std::path::Path::new(&request.name);
 
     let mut posts_in_progress = state.posts_in_progress.write().await;
     let Some(post) = posts_in_progress.get_mut(&post_id) else {

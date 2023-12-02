@@ -1,23 +1,22 @@
-use crate::blog::PostID;
-use crate::routes::api::SessionQuery;
+use crate::blog::{PostID, SessionID};
 use crate::state::SharedState;
-use axum::extract::{Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-pub struct PostFinishOptions {
+pub(super) struct PostFinishOptions {
+    session: SessionID,
     post_id: PostID,
     text: String,
 }
 
 pub(super) async fn post(
     State(state): SharedState,
-    Query(query): Query<SessionQuery>,
-    Json(options): Json<PostFinishOptions>,
+    Json(request): Json<PostFinishOptions>,
 ) -> StatusCode {
-    let Some(session) = state.get_session(&query.session).await else {
+    let Some(session) = state.get_session(&request.session).await else {
         return StatusCode::UNAUTHORIZED;
     };
 
@@ -25,7 +24,7 @@ pub(super) async fn post(
         .posts_in_progress
         .write()
         .await
-        .remove(&options.post_id)
+        .remove(&request.post_id)
     else {
         return StatusCode::NOT_FOUND;
     };
@@ -37,7 +36,7 @@ pub(super) async fn post(
     if post.meta.author_username != session.for_username {
         return StatusCode::FORBIDDEN;
     }
-    if options.text.trim().is_empty() {
+    if request.text.trim().is_empty() {
         return StatusCode::BAD_REQUEST;
     }
 
@@ -46,13 +45,13 @@ pub(super) async fn post(
             .join("post")
             .join(&post.meta.id)
             .join("text.md"),
-        options.text,
+        request.text,
     )
     .await
     {
         Ok(()) => (),
         Err(err) => {
-            eprintln!("Error writing text for post {}: {err}", options.post_id);
+            eprintln!("Error writing text for post {}: {err}", request.post_id);
             return StatusCode::INTERNAL_SERVER_ERROR;
         }
     }

@@ -1,26 +1,24 @@
-use std::collections::HashSet;
-
-use crate::blog::PostID;
-use crate::routes::api::SessionQuery;
+use crate::blog::{PostID, SessionID};
 use crate::state::SharedState;
-use axum::extract::{Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
+use std::collections::HashSet;
 
 #[derive(Debug, Deserialize)]
-pub struct PostOptions {
+pub(super) struct PostOptions {
+    session: SessionID,
     #[serde(default)]
     reply_to: Option<PostID>,
 }
 
 pub(super) async fn post(
     State(state): SharedState,
-    Query(query): Query<SessionQuery>,
-    Json(options): Json<PostOptions>,
+    Json(request): Json<PostOptions>,
 ) -> Result<Response, StatusCode> {
-    let Some(session) = state.get_session(&query.session).await else {
+    let Some(session) = state.get_session(&request.session).await else {
         return Err(StatusCode::UNAUTHORIZED);
     };
 
@@ -41,7 +39,7 @@ pub(super) async fn post(
         id: new_post_id.clone(),
         author_username: session.for_username,
         timestamp: chrono::Utc::now(),
-        reply_to: options.reply_to,
+        reply_to: request.reply_to,
         replies: Vec::new(),
         quotes: Vec::new(),
         in_progress: true,
