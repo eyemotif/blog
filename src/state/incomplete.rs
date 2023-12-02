@@ -74,7 +74,7 @@ impl super::State {
                         crate::job::thumbnails::run(&spawn_post.blocking_read().meta)
                     }),
                     PostJob::ReplyParent => tokio::task::spawn(async move {
-                        crate::job::reply::run(&spawn_post.blocking_read().meta).await
+                        crate::job::reply::run(&spawn_post.read().await.meta).await
                     }),
                     unr => unreachable!("{:?}", unr),
                 };

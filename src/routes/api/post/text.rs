@@ -71,6 +71,9 @@ fn process_node<'a>(node: &'a comrak::nodes::AstNode<'a>, post_id: &PostID) {
 
 fn process_link(link: &mut comrak::nodes::NodeLink, post_id: &PostID) {
     if let Some(post_image) = link.url.strip_prefix("image:") {
-        link.url = format!("/api/post/{post_id}/image/{post_image}")
+        link.url = format!("/api/post/{post_id}/image/{post_image}");
+    }
+    if let Some(username) = link.url.strip_prefix('@') {
+        link.url = format!("/user/{username}");
     }
 }

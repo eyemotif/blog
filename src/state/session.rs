@@ -16,7 +16,6 @@ impl super::State {
     pub async fn get_session(&self, session_id: &SessionID) -> Option<Session> {
         let sessions = self.sessions.write().await;
         let Some(session) = sessions.get(session_id) else {
-            // TODO: cleanup expired sessions
             return None;
         };
 

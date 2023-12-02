@@ -37,6 +37,8 @@ async fn main() {
 }
 
 async fn reprocess_posts(state: std::sync::Arc<crate::state::State>) -> std::io::Result<()> {
+    state.cleanup_stale_posts().await;
+
     let posts_folder = std::path::Path::new(crate::blog::STORE_PATH).join("post");
     let mut dir = tokio::fs::read_dir(&posts_folder).await?;
 
