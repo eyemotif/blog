@@ -1,4 +1,4 @@
-use crate::blog::PostID;
+use crate::blog::{Post, PostID};
 use crate::routes::api::SessionQuery;
 use crate::state::SharedState;
 use axum::extract::{Query, State};

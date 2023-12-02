@@ -49,9 +49,9 @@ async fn reprocess_posts(state: std::sync::Arc<crate::state::State>) -> std::io:
             println!("Found in-progress post: {}", meta.id);
 
             state
-                .complete_post(crate::state::IncompletePost {
+                .complete_post(crate::state::incomplete::IncompletePost {
                     meta: meta.clone(),
-                    jobs_left: crate::job::PostJob::all_processing_jobs(),
+                    jobs_left: crate::job::PostJob::all_possible_processing_jobs(&meta),
                 })
                 .await;
 

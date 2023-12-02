@@ -12,10 +12,9 @@ pub fn route() -> NestedRouter {
         .br(true)
         .quality(tower_http::CompressionLevel::Best);
 
-    // TODO: /:id/..
     axum::Router::new()
-        .route("/:id/meta/", get(meta::get))
-        .route("/:id/text/", get(text::get))
+        .route("/:id/meta", get(meta::get))
+        .route("/:id/text", get(text::get))
         .route("/latest/:amount/:after", get(latest::get))
         .route(
             "/:id/image/:img",

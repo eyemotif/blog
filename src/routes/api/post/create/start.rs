@@ -50,7 +50,7 @@ pub(super) async fn post(
 
     state.posts_in_progress.write().await.insert(
         new_post_id.clone(),
-        crate::state::IncompletePost {
+        crate::state::incomplete::IncompletePost {
             meta: new_post_meta.clone(),
             jobs_left: HashSet::from_iter([crate::job::PostJob::AddText]),
         },

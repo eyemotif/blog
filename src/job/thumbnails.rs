@@ -86,11 +86,11 @@ fn create_thumb(
     let image = image::io::Reader::open(image_path)?;
     let image = image.with_guessed_format()?;
 
+    // TODO: animated formats
     match image.format().expect("image should have format") {
-        image::ImageFormat::Png => (),              // TODO: apng
-        image::ImageFormat::Gif => return Ok(None), // HACK: resize_to_fill breaks animated GIFs, so we just won't resize them
-        // as theyre usually small anyway
-        image::ImageFormat::WebP => (), // TODO: animated webp
+        image::ImageFormat::Png => (),
+        image::ImageFormat::Gif => return Ok(None),
+        image::ImageFormat::WebP => (),
         _ => (),
     }
 
