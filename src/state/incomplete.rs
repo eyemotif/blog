@@ -66,15 +66,21 @@ impl super::State {
     pub async fn complete_post(&self, post: IncompletePost) {
         let post = Arc::new(RwLock::new(post));
 
-        if post.read().await.jobs_left.contains(&PostJob::Thumbnails) {
-            let spawn_post = post.clone();
-            tokio::task::spawn_blocking(move || {
-                crate::job::thumbnails::run(&spawn_post.blocking_read().meta)
-            })
-            .await
-            .expect("task should not panic");
+        for job in [PostJob::Thumbnails, PostJob::ReplyParent] {
+            if post.write().await.jobs_left.remove(&job) {
+                let spawn_post = post.clone();
+                let task = match job {
+                    PostJob::Thumbnails => tokio::task::spawn_blocking(move || {
+                        crate::job::thumbnails::run(&spawn_post.blocking_read().meta)
+                    }),
+                    PostJob::ReplyParent => tokio::task::spawn(async move {
+                        crate::job::reply::run(&spawn_post.blocking_read().meta).await
+                    }),
+                    unr => unreachable!("{:?}", unr),
+                };
 
-            post.write().await.jobs_left.remove(&PostJob::Thumbnails);
+                task.await.expect("task should not panic");
+            }
         }
 
         let post = Arc::into_inner(post)
