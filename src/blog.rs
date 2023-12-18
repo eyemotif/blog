@@ -7,7 +7,8 @@ pub type SessionID = String;
 pub const STORE_PATH: &str = "/home/shared/frith-store/blog";
 pub const POST_ID_BYTES: usize = 16;
 pub const SESSION_ID_BYTES: usize = 32;
-pub const SESSION_EXPIRED_AFTER: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24);
+pub const SESSION_TTL: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24);
+pub const INCOMPLETE_POST_TTL: std::time::Duration = std::time::Duration::from_secs(60 * 60);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {

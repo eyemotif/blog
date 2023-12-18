@@ -31,7 +31,7 @@ impl super::State {
             crate::blog::get_random_hex_string::<{ crate::blog::SESSION_ID_BYTES }>();
         let new_session = Session {
             for_username,
-            expires_at: std::time::Instant::now() + crate::blog::SESSION_EXPIRED_AFTER,
+            expires_at: std::time::Instant::now() + crate::blog::SESSION_TTL,
         };
 
         let mut sessions = self.sessions.write().await;

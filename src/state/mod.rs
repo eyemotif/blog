@@ -24,8 +24,8 @@ impl State {
     }
 
     pub async fn cleanup_stale_posts(&self) {
-        let max_in_progress_post_age = chrono::Duration::minutes(30);
-
+        let max_in_progress_post_age = chrono::Duration::from_std(crate::blog::INCOMPLETE_POST_TTL)
+            .expect("Constant std::duration be in range of chrono::duration");
         let now = chrono::Utc::now();
         let mut posts = self.posts_in_progress.write().await;
 
