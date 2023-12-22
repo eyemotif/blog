@@ -3,10 +3,10 @@ use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::Json;
 
-type CountChildrenFuture =
+type LongestThreadFuture =
     dyn std::future::Future<Output = Result<(usize, Post), StatusCode>> + Send;
 
-pub async fn get(Path(post_id): Path<PostID>) -> Result<Json<Vec<Post>>, StatusCode> {
+pub(super) async fn get(Path(post_id): Path<PostID>) -> Result<Json<Vec<Post>>, StatusCode> {
     let (_, last_child) = longest_thread(post_id.clone()).await?;
 
     let mut thread = vec![last_child];
@@ -28,7 +28,7 @@ pub async fn get(Path(post_id): Path<PostID>) -> Result<Json<Vec<Post>>, StatusC
 }
 
 // TODO: pass `Post` vectors up so `get` doesnt have to query them again
-fn longest_thread(post_id: PostID) -> std::pin::Pin<std::boxed::Box<CountChildrenFuture>> {
+fn longest_thread(post_id: PostID) -> std::pin::Pin<std::boxed::Box<LongestThreadFuture>> {
     Box::pin(async move {
         let post = super::meta::get(Path(post_id)).await?.0;
 

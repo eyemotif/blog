@@ -1,9 +1,10 @@
-use crate::blog::{PostID, SessionID};
+use crate::blog::{InviteID, PostID, SessionID};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 pub mod incomplete;
+pub mod invite;
 pub mod session;
 
 pub type SharedState = axum::extract::State<Arc<State>>;
@@ -13,6 +14,7 @@ pub type NestedRouter = axum::Router<Arc<State>>;
 pub struct State {
     pub sessions: RwLock<HashMap<SessionID, session::Session>>,
     pub posts_in_progress: RwLock<HashMap<PostID, incomplete::IncompletePost>>,
+    pub invites: RwLock<HashMap<InviteID, invite::Invite>>,
 }
 
 impl State {
@@ -20,6 +22,7 @@ impl State {
         State {
             sessions: RwLock::new(HashMap::new()),
             posts_in_progress: RwLock::new(HashMap::new()),
+            invites: RwLock::new(HashMap::new()),
         }
     }
 

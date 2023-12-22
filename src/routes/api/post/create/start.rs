@@ -44,6 +44,7 @@ pub(super) async fn post(
         quotes: Vec::new(),
         in_progress: true,
         images: Vec::new(),
+        private: false, // TODO
     };
 
     state.posts_in_progress.write().await.insert(
