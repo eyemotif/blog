@@ -6,6 +6,7 @@ mod image;
 mod latest;
 mod meta;
 mod text;
+mod thread;
 
 pub fn route() -> NestedRouter {
     let image_compression_layer = tower_http::compression::CompressionLayer::new()
@@ -20,5 +21,6 @@ pub fn route() -> NestedRouter {
             "/:id/image/:img",
             get(image::get).layer(image_compression_layer),
         )
+        .route("/thread/:id", get(thread::get))
         .nest("/create", create::route())
 }
