@@ -21,6 +21,9 @@ impl super::State {
 
         invite.is_valid().then(|| invite.clone())
     }
+    pub async fn remove_invite(&self, invite_id: &InviteID) -> Option<Invite> {
+        self.invites.write().await.remove(invite_id)
+    }
 
     pub async fn create_invite(&self, for_permissions: Permissions) -> InviteID {
         let invite_id: InviteID =
