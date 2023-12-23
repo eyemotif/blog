@@ -1,10 +1,45 @@
-use crate::blog::{PostID, STORE_PATH};
-use axum::extract::Path;
+use crate::blog::{PostID, SessionID, STORE_PATH};
+use crate::state::SharedState;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
+use axum::Json;
 use comrak::nodes::NodeValue;
+use serde::Deserialize;
 
-pub(super) async fn get(Path(post_id): Path<PostID>) -> Result<Response, StatusCode> {
+#[derive(Debug, Deserialize)]
+pub(super) struct TextOptions {
+    session: SessionID,
+}
+
+pub(super) async fn get(Path(post_id): Path<PostID>) -> Result<Html<Vec<u8>>, StatusCode> {
+    if let Some(html) = get_text(post_id, None).await? {
+        Ok(Html(html))
+    } else {
+        Err(StatusCode::FORBIDDEN)
+    }
+}
+
+pub(super) async fn get_with_session(
+    State(state): SharedState,
+    Path(post_id): Path<PostID>,
+    Json(request): Json<TextOptions>,
+) -> Result<Html<Vec<u8>>, StatusCode> {
+    let Some(session) = state.get_session(&request.session).await else {
+        return Err(StatusCode::UNAUTHORIZED);
+    };
+
+    if let Some(html) = get_text(post_id, Some(&session.for_username)).await? {
+        Ok(Html(html))
+    } else {
+        Err(StatusCode::FORBIDDEN)
+    }
+}
+
+async fn get_text(
+    post_id: PostID,
+    requesting_username: Option<&str>,
+) -> Result<Option<Vec<u8>>, StatusCode> {
     let file = match tokio::fs::read_to_string(
         std::path::Path::new(STORE_PATH)
             .join("post")
@@ -29,7 +64,7 @@ pub(super) async fn get(Path(post_id): Path<PostID>) -> Result<Response, StatusC
         let arena = comrak::Arena::new();
         let root = comrak::parse_document(&arena, &file, &comrak::Options::default());
 
-        process_nodes(root, &post_id);
+        process_nodes(root, &post.clone());
 
         let mut html = Vec::new();
         comrak::format_html(root, &comrak::Options::default(), &mut html)?;
@@ -40,12 +75,26 @@ pub(super) async fn get(Path(post_id): Path<PostID>) -> Result<Response, StatusC
     {
         Ok(it) => it,
         Err(err) => {
-            eprintln!("Couldn't post Markdown for post {post}: {err}");
+            eprintln!("Couldn't post Markdown for post {post_id}: {err}");
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 
-    Ok(([("Content-Type", "text/markdown")], Html(html)).into_response())
+    let meta = super::meta::get(Path(post_id)).await?.0;
+
+    if meta.is_private {
+        if let Some(username) = requesting_username {
+            let author_user = crate::routes::api::user::get(Path(meta.author_username))
+                .await?
+                .0;
+            if author_user.members.contains(username) {
+                return Ok(Some(html));
+            }
+        }
+        Ok(None)
+    } else {
+        Ok(Some(html))
+    }
 }
 
 fn process_nodes<'a>(node: &'a comrak::nodes::AstNode<'a>, post_id: &PostID) {

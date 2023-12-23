@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::blog::{InviteID, SessionID};
 use crate::state::SharedState;
 use axum::extract::State;
@@ -42,8 +44,8 @@ pub(super) async fn post(
         name: request.name,
         posts: Vec::new(),
         permissions: invite.for_permissions,
-        members: Vec::new(),
-        member_of: Vec::new(),
+        members: HashSet::new(),
+        member_of: HashSet::new(),
     };
 
     match tokio::fs::write(

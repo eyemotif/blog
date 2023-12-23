@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 
@@ -23,8 +25,8 @@ pub struct User {
     pub posts: Vec<PostID>,
 
     pub permissions: Permissions,
-    pub members: Vec<String>,
-    pub member_of: Vec<String>,
+    pub members: HashSet<String>,
+    pub member_of: HashSet<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,7 +41,7 @@ pub struct Post {
     pub images: Vec<String>,
 
     #[serde(default)]
-    pub private: bool,
+    pub is_private: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
