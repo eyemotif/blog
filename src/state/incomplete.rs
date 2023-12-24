@@ -64,23 +64,22 @@ async fn write_post(post: &Post) {
 
 impl super::State {
     pub async fn complete_post(&self, post: IncompletePost) {
+        let jobs_left = post.jobs_left.clone();
         let post = Arc::new(RwLock::new(post));
 
-        for job in [PostJob::Thumbnails, PostJob::ReplyParent] {
-            if post.write().await.jobs_left.remove(&job) {
-                let spawn_post = post.clone();
-                let task = match job {
-                    PostJob::Thumbnails => tokio::task::spawn_blocking(move || {
-                        crate::job::thumbnails::run(&spawn_post.blocking_read().meta)
-                    }),
-                    PostJob::ReplyParent => tokio::task::spawn(async move {
-                        crate::job::reply::run(&spawn_post.read().await.meta).await
-                    }),
-                    unr => unreachable!("{:?}", unr),
-                };
+        for job in jobs_left {
+            let spawn_post = post.clone();
+            let task = match job {
+                PostJob::Thumbnails => tokio::task::spawn_blocking(move || {
+                    crate::job::thumbnails::run(&spawn_post.blocking_read().meta)
+                }),
+                PostJob::ReplyParent => tokio::task::spawn(async move {
+                    crate::job::reply::run(&spawn_post.read().await.meta).await
+                }),
+                _ => continue,
+            };
 
-                task.await.expect("task should not panic");
-            }
+            task.await.expect("task should not panic");
         }
 
         let post = Arc::into_inner(post)

@@ -20,9 +20,9 @@ pub async fn run(post: &Post) {
             return;
         }
     };
+    
     let mut parent_meta =
         serde_json::from_slice::<Post>(&parent_meta).expect("stored post should deserialize");
-
     parent_meta.replies.push(post.id.clone());
 
     let parent_meta = serde_json::to_vec(&parent_meta).expect("post should serialize");

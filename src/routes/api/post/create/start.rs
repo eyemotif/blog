@@ -12,6 +12,8 @@ pub(super) struct PostOptions {
     session: SessionID,
     #[serde(default)]
     reply_to: Option<PostID>,
+    #[serde(default)]
+    is_private: bool,
 }
 
 pub(super) async fn post(
@@ -35,6 +37,15 @@ pub(super) async fn post(
         }
     }
 
+    let initial_post_jobs = if request.reply_to.is_some() {
+        HashSet::from_iter([
+            crate::job::PostJob::AddText,
+            crate::job::PostJob::ReplyParent,
+        ])
+    } else {
+        HashSet::from_iter([crate::job::PostJob::AddText])
+    };
+
     let new_post_meta = crate::blog::Post {
         id: new_post_id.clone(),
         author_username: session.for_username,
@@ -44,14 +55,14 @@ pub(super) async fn post(
         quotes: Vec::new(),
         in_progress: true,
         images: Vec::new(),
-        is_private: false, // TODO
+        is_private: request.is_private, // TODO: add separate endpoint for setting `post.private`
     };
 
     state.posts_in_progress.write().await.insert(
         new_post_id.clone(),
         crate::state::incomplete::IncompletePost {
             meta: new_post_meta.clone(),
-            jobs_left: HashSet::from_iter([crate::job::PostJob::AddText]),
+            jobs_left: initial_post_jobs,
         },
     );
 
