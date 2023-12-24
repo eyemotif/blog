@@ -1,5 +1,4 @@
 use crate::blog::PostID;
-use axum::body::StreamBody;
 use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -42,7 +41,7 @@ pub(super) async fn get(
         }
     };
     let stream = ReaderStream::new(file);
-    let stream = StreamBody::new(stream);
+    let stream = axum::body::Body::from_stream(stream);
 
     if let Some(mime_guess) = new_mime_guess::from_path(&image_file_path).first() {
         Ok(([("Content-Type", mime_guess.to_string())], stream).into_response())

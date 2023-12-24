@@ -1,5 +1,3 @@
-use axum::ServiceExt;
-use tower::Layer;
 use tower_http::cors::CorsLayer;
 use tower_http::normalize_path::NormalizePathLayer;
 
@@ -23,15 +21,25 @@ async fn main() {
         ))
         .allow_headers(tower_http::cors::Any);
 
-    let app = NormalizePathLayer::trim_trailing_slash().layer(
-        axum::Router::new()
-            .nest("/api", routes::api::route())
-            .with_state(state)
-            .layer(cors),
-    );
+    let app = axum::Router::new()
+        .nest("/api", routes::api::route())
+        .with_state(state)
+        .layer(cors)
+        .layer(NormalizePathLayer::trim_trailing_slash());
 
-    axum::Server::bind(&std::net::SocketAddr::from(([0, 0, 0, 0], 8010)))
-        .serve(app.into_make_service())
+    let listener = match tokio::net::TcpListener::bind(&std::net::SocketAddr::from((
+        [0, 0, 0, 0],
+        8010,
+    )))
+    .await
+    {
+        Ok(it) => it,
+        Err(err) => {
+            eprintln!("Error binding to port 8010: {err}");
+            return;
+        }
+    };
+    axum::serve(listener, app.into_make_service())
         .await
         .expect("Error serving app")
 }
