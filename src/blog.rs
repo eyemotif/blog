@@ -26,7 +26,6 @@ pub struct User {
 
     pub permissions: Permissions,
     pub members: HashSet<String>,
-    pub member_of: HashSet<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

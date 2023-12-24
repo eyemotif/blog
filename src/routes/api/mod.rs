@@ -2,6 +2,7 @@ use crate::state::NestedRouter;
 use axum::routing::{get, post};
 
 mod invite;
+mod member;
 mod post;
 mod session;
 mod signup;

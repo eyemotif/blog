@@ -2,7 +2,7 @@ use crate::blog::{PostID, SessionID, STORE_PATH};
 use crate::state::SharedState;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::response::{Html, IntoResponse, Response};
+use axum::response::Html;
 use axum::Json;
 use comrak::nodes::NodeValue;
 use serde::Deserialize;

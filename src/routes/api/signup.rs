@@ -45,7 +45,6 @@ pub(super) async fn post(
         posts: Vec::new(),
         permissions: invite.for_permissions,
         members: HashSet::new(),
-        member_of: HashSet::new(),
     };
 
     match tokio::fs::write(
