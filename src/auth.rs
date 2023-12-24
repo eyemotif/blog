@@ -19,7 +19,7 @@ async fn read_logins() -> std::io::Result<HashMap<String, String>> {
             Some(pair) => pair,
             None => continue,
         };
-        logins.insert(String::from(username), String::from(hash));
+        logins.insert(username.to_owned(), hash.to_owned());
     }
 
     Ok(logins)
