@@ -20,7 +20,7 @@ pub(super) async fn put(
     };
 
     let mut user = match crate::routes::api::user::get(axum::extract::Path(
-        session.for_username.clone(),
+        request.for_username.clone(),
     ))
     .await
     {
@@ -29,10 +29,11 @@ pub(super) async fn put(
     };
 
     user.members.insert(session.for_username.clone());
+
     match tokio::fs::write(
         std::path::Path::new(crate::blog::STORE_PATH)
             .join("user")
-            .join(format!("{}.json", session.for_username)),
+            .join(format!("{}.json", request.for_username)),
         serde_json::to_vec(&user).expect("user should serialize"),
     )
     .await
