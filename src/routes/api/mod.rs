@@ -11,6 +11,7 @@ mod user;
 pub fn route() -> NestedRouter {
     axum::Router::new()
         .nest("/post", post::route())
+        .nest("/member", member::route())
         .route("/user/:id", get(user::get))
         .route("/session", post(session::post))
         .route("/invite", post(invite::post))
