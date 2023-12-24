@@ -6,21 +6,21 @@ use axum::Json;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-pub(super) struct MemberJoinOptions {
+pub(super) struct MemberAddOptions {
     session: SessionID,
     for_username: String,
 }
 
 pub(super) async fn put(
     State(state): SharedState,
-    Json(request): Json<MemberJoinOptions>,
+    Json(request): Json<MemberAddOptions>,
 ) -> StatusCode {
     let Some(session) = state.get_session(&request.session).await else {
         return StatusCode::UNAUTHORIZED;
     };
 
     let mut user = match crate::routes::api::user::get(axum::extract::Path(
-        request.for_username.clone(),
+        session.for_username.clone(),
     ))
     .await
     {
@@ -28,22 +28,19 @@ pub(super) async fn put(
         Err(err) => return err,
     };
 
-    user.members.insert(session.for_username.clone());
+    user.members.insert(request.for_username.clone());
 
     match tokio::fs::write(
         std::path::Path::new(crate::blog::STORE_PATH)
             .join("user")
-            .join(format!("{}.json", request.for_username)),
+            .join(format!("{}.json", session.for_username)),
         serde_json::to_vec(&user).expect("user should serialize"),
     )
     .await
     {
         Ok(()) => StatusCode::OK,
         Err(err) => {
-            eprintln!(
-                "Error writing new user {}.json: {err}",
-                session.for_username
-            );
+            eprintln!("Error writing user {}.json: {err}", session.for_username);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
