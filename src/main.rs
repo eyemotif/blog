@@ -13,7 +13,7 @@ mod state;
 #[tokio::main]
 async fn main() {
     let state = std::sync::Arc::new(state::State::new());
-    reprocess_posts(state.clone())
+    restore_incomplete_posts(state.clone())
         .await
         .expect("error reprocessing in-progress posts");
 
@@ -36,30 +36,56 @@ async fn main() {
         .expect("Error serving app")
 }
 
-async fn reprocess_posts(state: std::sync::Arc<crate::state::State>) -> std::io::Result<()> {
-    state.cleanup_stale_posts().await;
-
-    let posts_folder = std::path::Path::new(crate::blog::STORE_PATH).join("post");
-    let mut dir = tokio::fs::read_dir(&posts_folder).await?;
-
-    while let Some(entry) = dir.next_entry().await? {
-        let meta = tokio::fs::read(entry.path().join("meta.json")).await?;
+async fn restore_incomplete_posts(
+    state: std::sync::Arc<crate::state::State>,
+) -> std::io::Result<()> {
+    async fn try_restore_post(
+        path: std::path::PathBuf,
+        state: std::sync::Arc<crate::state::State>,
+    ) -> std::io::Result<Option<crate::blog::PostID>> {
+        let meta = tokio::fs::read(path.join("meta.json")).await?;
         let meta = serde_json::from_slice::<crate::blog::Post>(&meta)
             .expect("post metadata should deserialize");
 
-        if meta.in_progress {
-            println!("Found in-progress post: {}", meta.id);
-
-            state
-                .complete_post(crate::state::incomplete::IncompletePost {
-                    meta: meta.clone(),
-                    jobs_left: crate::job::PostJob::all_possible_processing_jobs(&meta),
-                })
-                .await;
-
-            println!("Post {} complete!", meta.id);
+        if !meta.in_progress {
+            return Ok(None);
         }
+
+        let post_id = meta.id.clone();
+        state.posts_in_progress.write().await.insert(
+            post_id.clone(),
+            state::incomplete::IncompletePost {
+                jobs_left: crate::job::PostJob::all_possible_processing_jobs(&meta),
+                meta,
+            },
+        );
+
+        Ok(Some(post_id))
     }
+
+    let mut posts_dir =
+        tokio::fs::read_dir(std::path::Path::new(crate::blog::STORE_PATH).join("post")).await?;
+    let mut process_set = tokio::task::JoinSet::new();
+
+    while let Some(entry) = posts_dir.next_entry().await? {
+        process_set.spawn(try_restore_post(entry.path(), state.clone()));
+    }
+
+    while let Some(maybe_restored_post_id) = process_set
+        .join_next()
+        .await
+        .transpose()
+        .expect("task should not panic")
+        .transpose()?
+    {
+        let Some(restored_post_id) = maybe_restored_post_id else {
+            continue;
+        };
+
+        println!("Restored incomplete post {restored_post_id}");
+    }
+
+    state.cleanup_stale_posts().await;
 
     Ok(())
 }
