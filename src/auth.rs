@@ -1,4 +1,6 @@
 use crate::blog::STORE_PATH;
+use argon2::{PasswordHasher, PasswordVerifier};
+use rand::SeedableRng;
 use std::collections::HashMap;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 
@@ -23,9 +25,27 @@ async fn read_logins() -> std::io::Result<HashMap<String, String>> {
     Ok(logins)
 }
 
+fn hash_password(password: &str) -> argon2::password_hash::Result<String> {
+    let salt =
+        argon2::password_hash::SaltString::generate(&mut rand_chacha::ChaCha20Rng::from_entropy());
+
+    Ok(argon2::Argon2::default()
+        .hash_password(password.as_bytes(), &salt)?
+        .to_string())
+}
+fn verify_password(password: &str, hash: &str) -> argon2::password_hash::Result<bool> {
+    let hash = argon2::password_hash::PasswordHash::new(hash)?;
+
+    match argon2::Argon2::default().verify_password(password.as_bytes(), &hash) {
+        Ok(()) => Ok(true),
+        Err(argon2::password_hash::Error::Password) => Ok(false),
+        Err(err) => Err(err),
+    }
+}
+
 impl Auth {
     /// `Ok(Some(Auth))` if valid, `Ok(None)` if invalid, `Err` if logins.txt
-    /// could not be read/bcrypt verifying failed
+    /// could not be read/argon2 verifying failed
     pub async fn validate(
         username: &str,
         password: String,
@@ -37,7 +57,7 @@ impl Auth {
         };
 
         let password_is_valid =
-            tokio::task::spawn_blocking(move || bcrypt::verify(password, &hash))
+            tokio::task::spawn_blocking(move || verify_password(&password, &hash))
                 .await
                 .expect("task should not panic")?;
 
@@ -49,7 +69,7 @@ impl Auth {
     }
 
     /// `Ok(Some(Auth))` if created, `Ok(None)` if the user id already exists, `Err` if
-    /// logins.txt could not be read/bcrypt hashing failed
+    /// logins.txt could not be read/argon2 hashing failed
     pub async fn write_entry(
         username: &str,
         password: String,
@@ -59,7 +79,7 @@ impl Auth {
             return Ok(None);
         }
 
-        let hash = tokio::task::spawn_blocking(|| bcrypt::hash(password, bcrypt::DEFAULT_COST))
+        let hash = tokio::task::spawn_blocking(move || hash_password(&password))
             .await
             .expect("task should not panic")?;
 
