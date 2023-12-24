@@ -41,7 +41,7 @@ pub(super) async fn put(
         Ok(()) => StatusCode::OK,
         Err(err) => {
             eprintln!(
-                "Error writing new member to user {}.json: {err}",
+                "Error writing new user {}.json: {err}",
                 session.for_username
             );
             StatusCode::INTERNAL_SERVER_ERROR
