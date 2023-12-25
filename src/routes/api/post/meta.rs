@@ -18,10 +18,9 @@ pub(super) async fn get(
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
                 return Err(StatusCode::NOT_FOUND);
-            } else {
-                eprintln!("Error reading post {post_id} meta: {err}");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
             }
+            eprintln!("Error reading post {post_id} meta: {err}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 

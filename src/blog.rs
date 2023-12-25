@@ -1,7 +1,7 @@
-use std::collections::HashSet;
-
 use rand::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::fmt::Write;
 
 pub type PostID = String;
 pub type SessionID = String;
@@ -53,9 +53,8 @@ pub fn get_random_hex_string<const LEN: usize>() -> String {
     let mut bytes = [0u8; LEN];
     rand_chacha::ChaCha20Rng::from_entropy().fill_bytes(&mut bytes);
 
-    bytes
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect::<Vec<_>>()
-        .join("")
+    bytes.iter().fold(String::new(), |mut output, b| {
+        let _ = write!(output, "{b:02x}");
+        output
+    })
 }

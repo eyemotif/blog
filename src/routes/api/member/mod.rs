@@ -10,5 +10,4 @@ pub fn route() -> NestedRouter {
         .route("/add", put(add::put))
         .route("/revoke", put(revoke::put))
         .route("/leave", put(leave::put))
-
 }

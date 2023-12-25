@@ -8,16 +8,14 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 pub struct Auth(());
 
 async fn read_logins() -> std::io::Result<HashMap<String, String>> {
-    // TODO: improve the security of storing usernames and passwords
     let file = tokio::fs::File::open(std::path::Path::new(STORE_PATH).join("logins.txt")).await?;
     let reader = tokio::io::BufReader::new(file);
     let mut reader = reader.lines();
 
     let mut logins = HashMap::new();
     while let Some(line) = reader.next_line().await? {
-        let (username, hash) = match line.split_once('\t') {
-            Some(pair) => pair,
-            None => continue,
+        let Some((username, hash)) = line.split_once('\t') else {
+            continue;
         };
         logins.insert(username.to_owned(), hash.to_owned());
     }

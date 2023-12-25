@@ -41,7 +41,7 @@ async fn main() {
     };
     axum::serve(listener, app.into_make_service())
         .await
-        .expect("Error serving app")
+        .expect("Error serving app");
 }
 
 async fn restore_incomplete_posts(

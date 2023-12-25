@@ -71,12 +71,12 @@ impl super::State {
             let spawn_post = post.clone();
             let task = match job {
                 PostJob::Thumbnails => tokio::task::spawn_blocking(move || {
-                    crate::job::thumbnails::run(&spawn_post.blocking_read().meta)
+                    crate::job::thumbnails::run(&spawn_post.blocking_read().meta);
                 }),
                 PostJob::ReplyParent => tokio::task::spawn(async move {
-                    crate::job::reply::run(&spawn_post.read().await.meta).await
+                    crate::job::reply::run(&spawn_post.read().await.meta).await;
                 }),
-                _ => continue,
+                PostJob::AddText => continue,
             };
 
             task.await.expect("task should not panic");

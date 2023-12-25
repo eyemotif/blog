@@ -52,10 +52,9 @@ async fn get_text(
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
                 return Err(StatusCode::NOT_FOUND);
-            } else {
-                eprintln!("Error reading post {post_id} meta: {err}");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
             }
+            eprintln!("Error reading post {post_id} meta: {err}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 
@@ -105,10 +104,7 @@ fn process_nodes<'a>(node: &'a comrak::nodes::AstNode<'a>, post_id: &PostID) {
 }
 fn process_node<'a>(node: &'a comrak::nodes::AstNode<'a>, post_id: &PostID) {
     match &mut node.data.borrow_mut().value {
-        NodeValue::Image(link) => {
-            process_link(link, post_id);
-        }
-        NodeValue::Link(link) => {
+        NodeValue::Image(link) | NodeValue::Link(link) => {
             process_link(link, post_id);
         }
         // NodeValue::BlockQuote => {

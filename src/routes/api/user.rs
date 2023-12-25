@@ -15,10 +15,9 @@ pub(super) async fn get(Path(username): Path<String>) -> Result<Json<User>, Stat
         Err(err) => {
             if err.kind() == std::io::ErrorKind::NotFound {
                 return Err(StatusCode::NOT_FOUND);
-            } else {
-                eprintln!("Error reading user {username}: {err}");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
             }
+            eprintln!("Error reading user {username}: {err}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 
