@@ -87,11 +87,8 @@ fn create_thumb(
     let image = image.with_guessed_format()?;
 
     // TODO: animated formats
-    match image.format().expect("image should have format") {
-        image::ImageFormat::Png => (),
-        image::ImageFormat::Gif => return Ok(None),
-        image::ImageFormat::WebP => (),
-        _ => (),
+    if let image::ImageFormat::Gif = image.format().expect("image should have format") {
+        return Ok(None);
     }
 
     let image = image.decode()?;

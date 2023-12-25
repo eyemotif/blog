@@ -17,13 +17,12 @@ impl PostJob {
     pub fn all_possible_processing_jobs(
         post: &crate::blog::Post,
     ) -> std::collections::HashSet<Self> {
-        std::collections::HashSet::from_iter(
-            [
-                post.images.is_empty().not().then_some(PostJob::Thumbnails),
-                post.reply_to.is_some().then_some(PostJob::ReplyParent),
-            ]
-            .into_iter()
-            .flatten(),
-        )
+        [
+            post.images.is_empty().not().then_some(PostJob::Thumbnails),
+            post.reply_to.is_some().then_some(PostJob::ReplyParent),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
     }
 }
