@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use rand::RngCore;
+use rand::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 
 pub type PostID = String;
@@ -50,9 +50,8 @@ pub struct Permissions {
 }
 
 pub fn get_random_hex_string<const LEN: usize>() -> String {
-    // TODO: this doesn't use a cryptographically secure randomness algorithm
     let mut bytes = [0u8; LEN];
-    rand::thread_rng().fill_bytes(&mut bytes);
+    rand_chacha::ChaCha20Rng::from_entropy().fill_bytes(&mut bytes);
 
     bytes
         .iter()
