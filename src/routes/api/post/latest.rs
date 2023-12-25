@@ -1,11 +1,48 @@
 use crate::blog::{Post, STORE_PATH};
-use axum::extract::Path;
+use crate::state::SharedState;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 
 pub(super) async fn get(
+    State(state): SharedState,
     region: Option<Path<(usize, usize)>>,
 ) -> Result<Json<Vec<Post>>, StatusCode> {
+    let Path((amount, after)) = region.unwrap_or(Path((10, 0)));
+
+    let cache_len =
+        if let Some(lastest_posts_cache) = state.cache.read().await.latest_posts.as_ref() {
+            lastest_posts_cache.len()
+        } else {
+            0
+        };
+
+    if cache_len > amount + after {
+        Ok(Json(
+            state
+                .cache
+                .read()
+                .await
+                .latest_posts
+                .as_ref()
+                .expect("cache_len should be greater than zero")
+                .iter()
+                .skip(after)
+                .take(amount)
+                .cloned()
+                .collect(),
+        ))
+    } else {
+        let latest_posts = get_latest_posts(amount + after).await?;
+        state.cache.write().await.latest_posts = Some(latest_posts.clone());
+
+        Ok(Json(
+            latest_posts.into_iter().skip(after).take(amount).collect(),
+        ))
+    }
+}
+
+async fn get_latest_posts(amount: usize) -> Result<Vec<Post>, StatusCode> {
     let mut users_files =
         match tokio::fs::read_dir(std::path::Path::new(STORE_PATH).join("user")).await {
             Ok(it) => it,
@@ -45,8 +82,6 @@ pub(super) async fn get(
         }
     }
 
-    let Path((amount, after)) = region.unwrap_or(Path((10, 0)));
-    let posts_to_read = amount + after;
     let mut latest_post_ids = Vec::new();
 
     for user in users {
@@ -55,12 +90,7 @@ pub(super) async fn get(
         }
 
         // posts are in reverse chronological order
-        latest_post_ids
-            .extend_from_slice(&user.posts[user.posts.len().saturating_sub(posts_to_read)..]);
-    }
-
-    if latest_post_ids.len() <= after {
-        return Ok(Json(Vec::new()));
+        latest_post_ids.extend_from_slice(&user.posts[user.posts.len().saturating_sub(amount)..]);
     }
 
     let mut latest_posts = Vec::new();
@@ -74,7 +104,6 @@ pub(super) async fn get(
     }
 
     latest_posts.sort_unstable_by(|a, b| a.timestamp.cmp(&b.timestamp).reverse());
-    let latest_posts = latest_posts.into_iter().skip(after).take(amount).collect();
 
-    Ok(Json(latest_posts))
+    Ok(latest_posts)
 }

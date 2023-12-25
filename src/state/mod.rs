@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+pub mod cache;
 pub mod incomplete;
 pub mod invite;
 pub mod session;
@@ -15,6 +16,7 @@ pub struct State {
     pub sessions: RwLock<HashMap<SessionID, session::Session>>,
     pub posts_in_progress: RwLock<HashMap<PostID, incomplete::IncompletePost>>,
     pub invites: RwLock<HashMap<InviteID, invite::Invite>>,
+    pub cache: RwLock<cache::Cache>,
 }
 
 impl State {
@@ -23,6 +25,7 @@ impl State {
             sessions: RwLock::new(HashMap::new()),
             posts_in_progress: RwLock::new(HashMap::new()),
             invites: RwLock::new(HashMap::new()),
+            cache: RwLock::new(cache::Cache::default()),
         }
     }
 
