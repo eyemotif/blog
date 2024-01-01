@@ -48,7 +48,9 @@ pub(super) async fn post(
     };
 
     match tokio::fs::write(
-        std::path::Path::new(crate::blog::STORE_PATH).join("path"),
+        std::path::Path::new(crate::blog::STORE_PATH)
+            .join("user")
+            .join(format!("{}.json", request.username)),
         serde_json::to_vec(&new_user).expect("user should serialize"),
     )
     .await
@@ -70,7 +72,7 @@ impl SignupOptions {
         static USERNAME_PATTERN: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
 
         let username_pattern = USERNAME_PATTERN.get_or_init(|| {
-            regex::Regex::new(r"^[a-zA-Z0-9-_]$").expect("constant pattern should parse")
+            regex::Regex::new(r"^[a-zA-Z0-9-_]+$").expect("constant pattern should parse")
         });
 
         if !username_pattern.is_match(&self.username) {

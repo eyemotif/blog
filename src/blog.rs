@@ -7,7 +7,10 @@ pub type PostID = String;
 pub type SessionID = String;
 pub type InviteID = String;
 
+#[cfg(not(debug_assertions))]
 pub const STORE_PATH: &str = "/home/shared/frith-store/blog";
+#[cfg(debug_assertions)]
+pub const STORE_PATH: &str = "test-store";
 
 pub const POST_ID_BYTES: usize = 16;
 pub const SESSION_ID_BYTES: usize = 32;
