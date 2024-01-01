@@ -76,7 +76,7 @@ impl super::State {
                 PostJob::ReplyParent => tokio::task::spawn(async move {
                     crate::job::reply::run(&spawn_post.read().await.meta).await;
                 }),
-                PostJob::AddText => continue,
+                PostJob::AddText => unreachable!(),
             };
 
             task.await.expect("task should not panic");

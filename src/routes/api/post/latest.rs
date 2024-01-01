@@ -17,7 +17,7 @@ pub(super) async fn get(
             0
         };
 
-    if cache_len > amount + after {
+    if cache_len >= amount + after {
         Ok(Json(
             state
                 .cache

@@ -24,6 +24,13 @@ pub(super) async fn post(
         return Err(StatusCode::UNAUTHORIZED);
     };
 
+    let user = crate::routes::api::user::get(axum::extract::Path(session.for_username))
+        .await?
+        .0;
+    if !user.permissions.can_create_posts {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let new_post_id = crate::blog::get_random_hex_string::<{ crate::blog::POST_ID_BYTES }>();
     let post_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
@@ -48,7 +55,7 @@ pub(super) async fn post(
 
     let new_post_meta = crate::blog::Post {
         id: new_post_id.clone(),
-        author_username: session.for_username,
+        author_username: user.username,
         timestamp: chrono::Utc::now(),
         reply_to: request.reply_to,
         replies: Vec::new(),

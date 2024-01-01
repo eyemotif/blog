@@ -15,6 +15,7 @@ enum QueueTask<T> {
 }
 
 impl<T: Send + 'static> JoinQueue<T> {
+    #[must_use]
     pub fn new(max_concurrent: usize) -> Self {
         Self {
             max_concurrent,

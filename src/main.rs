@@ -4,7 +4,7 @@ use tower_http::normalize_path::NormalizePathLayer;
 mod auth;
 mod blog;
 mod job;
-// mod joinqueue;
+pub mod joinqueue;
 mod routes;
 mod state;
 
