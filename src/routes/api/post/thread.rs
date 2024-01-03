@@ -18,10 +18,10 @@ async fn longest_thread(post_id: PostID) -> Result<Vec<Post>, StatusCode> {
         parent_post: Post,
     ) -> std::pin::Pin<std::boxed::Box<LongestThreadFuture>> {
         Box::pin(async move {
-            let mut child_thread_set = crate::joinqueue::JoinQueue::new(5);
+            let mut child_thread_set = tokio::task::JoinSet::new();
             for child_id in parent_post.replies.clone() {
                 let child_post = super::meta::get(Path(child_id)).await?.0;
-                child_thread_set.enqueue(longest_thread_inner(child_post));
+                child_thread_set.spawn(longest_thread_inner(child_post));
             }
 
             let mut longest_child_thread: Option<Vec<Post>> = None;
