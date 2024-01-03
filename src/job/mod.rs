@@ -1,5 +1,3 @@
-use std::ops::Not;
-
 pub mod reply;
 pub mod thumbnails;
 
@@ -14,15 +12,9 @@ pub enum PostJob {
 }
 
 impl PostJob {
-    pub fn all_possible_processing_jobs(
-        post: &crate::blog::Post,
-    ) -> std::collections::HashSet<Self> {
-        [
-            post.images.is_empty().not().then_some(PostJob::Thumbnails),
-            post.reply_to.is_some().then_some(PostJob::ReplyParent),
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
+    pub fn all_possible_processing_jobs() -> std::collections::HashSet<Self> {
+        [PostJob::Thumbnails, PostJob::ReplyParent]
+            .into_iter()
+            .collect()
     }
 }

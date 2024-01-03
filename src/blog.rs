@@ -40,8 +40,6 @@ pub struct Post {
     pub replies: Vec<PostID>,
     pub quotes: Vec<PostID>,
     pub in_progress: bool,
-    pub images: Vec<String>,
-
     #[serde(default)]
     pub is_private: bool,
 }
@@ -51,6 +49,9 @@ pub struct Permissions {
     pub can_create_invites: bool,
     pub can_create_posts: bool,
 }
+
+#[derive(Debug)]
+pub struct Media {}
 
 pub fn get_random_hex_string<const LEN: usize>() -> String {
     let mut bytes = [0u8; LEN];

@@ -49,7 +49,7 @@ pub(super) async fn post(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    if post.meta.images.is_empty() {
+    if post.media.images.is_empty() {
         let post_path = std::path::Path::new(crate::blog::STORE_PATH)
             .join("post")
             .join(&post_id);
@@ -101,7 +101,7 @@ pub(super) async fn post(
     // writing to meta.json is unnecessary because of state::complete_post
     // theoretically to_string_lossy should never lose any data as filenames are
     // ultimately given as strings anyway
-    post.meta
+    post.media
         .images
         .push(image_name.to_string_lossy().into_owned());
     post.jobs_left.insert(crate::job::PostJob::Thumbnails);

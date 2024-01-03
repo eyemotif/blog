@@ -61,7 +61,6 @@ pub(super) async fn post(
         replies: Vec::new(),
         quotes: Vec::new(),
         in_progress: true,
-        images: Vec::new(),
         is_private: request.is_private, // TODO: add separate endpoint for setting `post.private`
     };
 
@@ -70,6 +69,7 @@ pub(super) async fn post(
         crate::state::incomplete::IncompletePost {
             meta: new_post_meta.clone(),
             jobs_left: initial_post_jobs,
+            media: crate::state::incomplete::Media::default(),
         },
     );
 

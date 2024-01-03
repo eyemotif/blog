@@ -63,8 +63,9 @@ async fn restore_incomplete_posts(
         state.posts_in_progress.write().await.insert(
             post_id.clone(),
             state::incomplete::IncompletePost {
-                jobs_left: crate::job::PostJob::all_possible_processing_jobs(&meta),
+                jobs_left: crate::job::PostJob::all_possible_processing_jobs(),
                 meta,
+                media: state::incomplete::Media::default(),
             },
         );
 

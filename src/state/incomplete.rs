@@ -9,6 +9,13 @@ use std::sync::Arc;
 pub struct IncompletePost {
     pub meta: Post,
     pub jobs_left: HashSet<PostJob>,
+    pub media: Media,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Media {
+    pub images: Vec<String>,
+    pub videos: Vec<String>,
 }
 
 async fn write_post(post: &Post) {
@@ -71,7 +78,7 @@ impl super::State {
             let spawn_post = post.clone();
             let task = match job {
                 PostJob::Thumbnails => tokio::task::spawn_blocking(move || {
-                    crate::job::thumbnails::run(&spawn_post.blocking_read().meta);
+                    crate::job::thumbnails::run(&spawn_post.blocking_read());
                 }),
                 PostJob::ReplyParent => tokio::task::spawn(async move {
                     crate::job::reply::run(&spawn_post.read().await.meta).await;

@@ -1,13 +1,13 @@
 const SMALL_THUMB_SIZE: u32 = 128;
 const LARGE_THUMB_SIZE: u32 = 512;
 
-pub fn run(post: &crate::blog::Post) {
+pub fn run(post: &crate::state::incomplete::IncompletePost) {
     let image_path = std::path::Path::new(crate::blog::STORE_PATH)
         .join("post")
-        .join(&post.id)
+        .join(&post.meta.id)
         .join("image");
 
-    for image_name in &post.images {
+    for image_name in &post.media.images {
         let raw_path = image_path.join("raw").join(image_name);
         let small_path = image_path.join("small").join(image_name);
         let large_path = image_path.join("large").join(image_name);
@@ -17,7 +17,7 @@ pub fn run(post: &crate::blog::Post) {
             Err(err) => {
                 eprintln!(
                     "Error creating small thumbnail for image {image_name} for post {}: {err}",
-                    post.id
+                    post.meta.id
                 );
                 continue;
             }
@@ -27,7 +27,7 @@ pub fn run(post: &crate::blog::Post) {
             Err(err) => {
                 eprintln!(
                     "Error creating large thumbnail for image {image_name} for post {}: {err}",
-                    post.id
+                    post.meta.id
                 );
                 continue;
             }
@@ -39,7 +39,7 @@ pub fn run(post: &crate::blog::Post) {
                 Err(err) => {
                     eprintln!(
                         "Error writing small thumbnail for image {image_name} for post {}: {err}",
-                        post.id
+                        post.meta.id
                     );
                 }
             }
@@ -49,7 +49,7 @@ pub fn run(post: &crate::blog::Post) {
                 Err(err) => {
                     eprintln!(
                         "Error writing small copy for image {image_name} for post {}: {err}",
-                        post.id
+                        post.meta.id
                     );
                 }
             }
@@ -60,7 +60,7 @@ pub fn run(post: &crate::blog::Post) {
                 Err(err) => {
                     eprintln!(
                         "Error writing large thumbnail for image {image_name} for post {}: {err}",
-                        post.id
+                        post.meta.id
                     );
                 }
             }
@@ -70,7 +70,7 @@ pub fn run(post: &crate::blog::Post) {
                 Err(err) => {
                     eprintln!(
                         "Error writing large copy for image {image_name} for post {}: {err}",
-                        post.id
+                        post.meta.id
                     );
                 }
             }
