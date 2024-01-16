@@ -36,23 +36,7 @@ pub(super) async fn post(
         .join("post")
         .join(&new_post_id);
 
-    match tokio::fs::create_dir(&post_path).await {
-        Ok(()) => (),
-        Err(err) => {
-            eprintln!("Could not create folder for post {new_post_id}: {err}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    let initial_post_jobs = if request.reply_to.is_some() {
-        HashSet::from_iter([
-            crate::job::PostJob::AddText,
-            crate::job::PostJob::ReplyParent,
-        ])
-    } else {
-        HashSet::from_iter([crate::job::PostJob::AddText])
-    };
-
+    let initial_post_jobs = get_initial_post_jobs(&request);
     let new_post_meta = crate::blog::Post {
         id: new_post_id.clone(),
         author_username: user.username,
@@ -68,12 +52,20 @@ pub(super) async fn post(
         new_post_id.clone(),
         crate::state::incomplete::IncompletePost {
             meta: new_post_meta.clone(),
-            jobs_left: initial_post_jobs,
+            jobs_left: initial_post_jobs.iter().copied().collect(),
             media: crate::state::incomplete::Media::default(),
         },
     );
 
     tokio::spawn(async move { state.clone().cleanup_stale_posts().await });
+
+    match tokio::fs::create_dir(&post_path).await {
+        Ok(()) => (),
+        Err(err) => {
+            eprintln!("Could not create folder for post {new_post_id}: {err}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    }
 
     match tokio::fs::write(
         post_path.join("meta.json"),
@@ -89,4 +81,15 @@ pub(super) async fn post(
     }
 
     Ok((StatusCode::CREATED, new_post_id).into_response())
+}
+
+fn get_initial_post_jobs(request: &PostOptions) -> &'static [crate::job::PostJob] {
+    if request.reply_to.is_some() {
+        &[
+            crate::job::PostJob::AddText,
+            crate::job::PostJob::ReplyParent,
+        ]
+    } else {
+        &[crate::job::PostJob::AddText]
+    }
 }

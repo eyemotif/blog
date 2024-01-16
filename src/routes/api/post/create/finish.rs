@@ -30,6 +30,7 @@ pub(super) async fn post(
     };
 
     if !post.meta.in_progress {
+        // sanity check
         eprintln!("Completed post {} in in-progress post list!", post.meta.id);
         return StatusCode::INTERNAL_SERVER_ERROR;
     }

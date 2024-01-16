@@ -149,13 +149,13 @@ async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathB
         let message_or_timeout =
             tokio::time::timeout(IMAGE_SOCKET_MESSAGE_TTL, socket.recv()).await;
         let Ok(message) = message_or_timeout else {
-            close_socket(socket, "message timeout".to_owned()).await;
+            close_socket(socket, "message timeout").await;
             break;
         };
 
         total_recv_time += recv_start.elapsed();
         if total_recv_time >= IMAGE_SOCKET_TTL {
-            close_socket(socket, "transfer timeout".to_owned()).await;
+            close_socket(socket, "transfer timeout").await;
             break;
         }
 
@@ -163,7 +163,7 @@ async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathB
             Some(Ok(it)) => it,
             Some(Err(err)) => {
                 eprintln!("Error handling image socket for {image_path:?}: {err}");
-                close_socket(socket, "connection error".to_owned()).await;
+                close_socket(socket, "connection error").await;
                 break;
             }
             None => break,
@@ -174,7 +174,7 @@ async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathB
                 Ok(()) => (),
                 Err(err) => {
                     eprintln!("Error writing to image file {image_path:?}: {err}");
-                    close_socket(socket, "server error".to_owned()).await;
+                    close_socket(socket, "server error").await;
                     break;
                 }
             },
@@ -192,7 +192,7 @@ async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathB
     }
 }
 
-async fn close_socket(mut socket: axum::extract::ws::WebSocket, reason: String) {
+async fn close_socket(mut socket: axum::extract::ws::WebSocket, reason: &'static str) {
     _ = tokio::time::timeout(Duration::from_secs(5), async move {
         _ = socket
             .send(axum::extract::ws::Message::Close(Some(

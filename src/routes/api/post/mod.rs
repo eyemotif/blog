@@ -1,7 +1,8 @@
 use crate::state::NestedRouter;
-use axum::routing::get;
+use axum::routing::{get, post};
 
 mod create;
+mod delete;
 mod image;
 mod latest;
 mod meta;
@@ -22,6 +23,7 @@ pub fn route() -> NestedRouter {
             "/:id/image/:img",
             get(image::get).layer(image_compression_layer),
         )
+        .route("/:id/delete", post(delete::post))
         .route("/thread/:id", get(thread::get))
         .nest("/create", create::route())
 }
