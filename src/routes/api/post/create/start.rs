@@ -5,7 +5,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
-use std::collections::HashSet;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct PostOptions {

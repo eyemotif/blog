@@ -86,7 +86,7 @@ async fn get_text(
             let author_user = crate::routes::api::user::get(Path(meta.author_username))
                 .await?
                 .0;
-            if author_user.members.contains(username) {
+            if author_user.members.contains(username) || author_user.username == username {
                 return Ok(Some(html));
             }
         }
