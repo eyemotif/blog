@@ -1,5 +1,5 @@
 use crate::state::NestedRouter;
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 
 mod create;
 mod delete;
@@ -17,7 +17,7 @@ pub fn route() -> NestedRouter {
     axum::Router::new()
         .route("/:id/meta", get(meta::get))
         .route("/:id/text", get(text::get))
-        .route("/:id/text/member", get(text::get_with_session))
+        .route("/:id/text/member", put(text::get_with_session))
         .route("/latest/:amount/:after", get(latest::get))
         .route(
             "/:id/image/:img",
