@@ -145,6 +145,17 @@ async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathB
     };
     let mut total_recv_time = Duration::ZERO;
 
+    match socket
+        .send(axum::extract::ws::Message::Text("go ahead!".to_owned()))
+        .await
+    {
+        Ok(()) => (),
+        Err(err) => {
+            eprintln!("Error sending initial heartbeat: {err}");
+            return;
+        }
+    }
+
     loop {
         let recv_start = Instant::now();
         let message_or_timeout =
