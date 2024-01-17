@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 use tokio::io::AsyncWriteExt;
 
 const IMAGE_SOCKET_TTL: Duration = Duration::from_secs(60);
-const IMAGE_SOCKET_MESSAGE_TTL: Duration = Duration::from_secs(1);
+const IMAGE_SOCKET_MESSAGE_TTL: Duration = Duration::from_secs(3);
 
 #[derive(Debug, Deserialize)]
 pub(super) struct ImageUploadOptions {
@@ -98,12 +98,12 @@ pub(super) async fn post(
         }
     }
 
-    // writing to meta.json is unnecessary because of state::complete_post
     // theoretically to_string_lossy should never lose any data as filenames are
     // ultimately given as strings anyway
     post.media
         .images
         .push(image_name.to_string_lossy().into_owned());
+    // writing to meta.json is unnecessary because of state::complete_post
     post.jobs_left.insert(crate::job::PostJob::Thumbnails);
 
     Ok(format!(
@@ -132,6 +132,7 @@ pub(super) async fn ws(
 async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathBuf) {
     let mut image_file = match tokio::fs::OpenOptions::new()
         .append(true)
+        .create(true)
         .open(&image_path)
         .await
     {
