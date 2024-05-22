@@ -3,7 +3,7 @@ use crate::state::SharedState;
 use axum::extract::ws::WebSocket;
 use axum::extract::{Path, State, WebSocketUpgrade};
 use axum::http::StatusCode;
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 use std::os::unix::ffi::OsStrExt;
@@ -116,6 +116,14 @@ pub(super) async fn ws(
     Path((post_id, image_name)): Path<(PostID, String)>,
     socket: WebSocketUpgrade,
 ) -> Response {
+    let post = match crate::routes::api::post::meta::get(Path(post_id.clone())).await {
+        Ok(it) => it,
+        Err(err) => return err.into_response(),
+    };
+    if !post.in_progress {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
     socket.on_upgrade(|socket| {
         handle_image_socket(
             socket,
@@ -181,15 +189,30 @@ async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathB
             None => break,
         };
 
+        // HACK: the client will wait for the server to write the chunk it sent
+        // before sending a new one. This is slow, and should be replaced by a
+        // chunk indexing system in the future.
         match message {
-            axum::extract::ws::Message::Binary(data) => match image_file.write_all(&data).await {
-                Ok(()) => (),
-                Err(err) => {
-                    eprintln!("Error writing to image file {image_path:?}: {err}");
-                    close_socket(socket, "server error").await;
-                    break;
+            axum::extract::ws::Message::Binary(data) => {
+                match image_file.write_all(&data).await {
+                    Ok(()) => (),
+                    Err(err) => {
+                        eprintln!("Error writing to image file {image_path:?}: {err}");
+                        close_socket(socket, "server error").await;
+                        break;
+                    }
                 }
-            },
+                match socket
+                    .send(axum::extract::ws::Message::Text(" ".to_owned()))
+                    .await
+                {
+                    Ok(()) => (),
+                    Err(err) => {
+                        eprintln!("Error sending heartbeat: {err}");
+                        return;
+                    }
+                }
+            }
             axum::extract::ws::Message::Close(_) => return,
             axum::extract::ws::Message::Ping(_)
             | axum::extract::ws::Message::Pong(_)
