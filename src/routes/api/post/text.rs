@@ -59,19 +59,17 @@ async fn get_text(
     };
 
     let post = post_id.clone();
-    let html = match tokio::task::spawn_blocking(move || {
+    let html = tokio::task::spawn_blocking(move || {
         let arena = comrak::Arena::new();
         let root = comrak::parse_document(&arena, &file, &comrak::Options::default());
 
-        process_nodes(root, &post.clone());
+        process_nodes(root, &post);
 
         let mut html = Vec::new();
         comrak::format_html(root, &comrak::Options::default(), &mut html)?;
         std::io::Result::Ok(html)
-    })
-    .await
-    .expect("task should not panic")
-    {
+    });
+    let html = match html.await.expect("task should not panic") {
         Ok(it) => it,
         Err(err) => {
             eprintln!("Couldn't post Markdown for post {post_id}: {err}");

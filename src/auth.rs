@@ -73,7 +73,7 @@ impl Auth {
         password: String,
     ) -> Result<Option<Auth>, Box<dyn std::error::Error>> {
         let logins_file = read_logins().await?;
-        if logins_file.get(username).is_some() {
+        if logins_file.contains_key(username) {
             return Ok(None);
         }
 

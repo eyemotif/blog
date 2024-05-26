@@ -15,9 +15,7 @@ impl Session {
 impl super::State {
     pub async fn get_session(&self, session_id: &SessionID) -> Option<Session> {
         let sessions = self.sessions.write().await;
-        let Some(session) = sessions.get(session_id) else {
-            return None;
-        };
+        let session = sessions.get(session_id)?;
 
         session.is_valid().then(|| session.clone())
     }

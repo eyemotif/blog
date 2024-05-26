@@ -15,9 +15,7 @@ impl Invite {
 impl super::State {
     pub async fn get_invite(&self, invite_id: &InviteID) -> Option<Invite> {
         let invites = self.invites.read().await;
-        let Some(invite) = invites.get(invite_id) else {
-            return None;
-        };
+        let invite = invites.get(invite_id)?;
 
         invite.is_valid().then(|| invite.clone())
     }
