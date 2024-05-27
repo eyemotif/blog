@@ -203,7 +203,7 @@ async fn handle_image_socket(mut socket: WebSocket, image_path: std::path::PathB
                     }
                 }
                 match socket
-                    .send(axum::extract::ws::Message::Text(" ".to_owned()))
+                    .send(axum::extract::ws::Message::Text(String::new()))
                     .await
                 {
                     Ok(()) => (),

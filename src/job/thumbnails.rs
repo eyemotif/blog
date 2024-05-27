@@ -101,6 +101,7 @@ fn create_thumb_static(image: image::DynamicImage, max_size: u32) -> image::Dyna
     if height <= max_size && width <= max_size {
         image
     } else {
+        // Lanczos3 is best but slowest: https://docs.rs/image/0.25.1/image/imageops/enum.FilterType.html
         image.resize_to_fill(max_size, max_size, image::imageops::Lanczos3)
     }
 }

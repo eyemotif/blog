@@ -74,19 +74,22 @@ impl super::State {
         let jobs_left = post.jobs_left.clone();
         let post = Arc::new(RwLock::new(post));
 
+        let mut set = tokio::task::JoinSet::new();
         for job in jobs_left {
             let spawn_post = post.clone();
-            let task = match job {
-                PostJob::Thumbnails => tokio::task::spawn_blocking(move || {
+            match job {
+                PostJob::Thumbnails => set.spawn_blocking(move || {
                     crate::job::thumbnails::run(&spawn_post.blocking_read());
                 }),
-                PostJob::ReplyParent => tokio::task::spawn(async move {
+                PostJob::ReplyParent => set.spawn(async move {
                     crate::job::reply::run(&spawn_post.read().await.meta).await;
                 }),
                 PostJob::AddText => unreachable!(),
             };
+        }
 
-            task.await.expect("task should not panic");
+        while let Some(task_result) = set.join_next().await {
+            task_result.expect("task should not panic");
         }
 
         let post = Arc::into_inner(post)
