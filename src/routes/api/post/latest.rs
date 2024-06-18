@@ -4,6 +4,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 
+// TODO: pagination and/or different lengths
 pub(super) async fn get(
     State(state): SharedState,
     region: Option<Path<(usize, usize)>>,
@@ -43,6 +44,50 @@ pub(super) async fn get(
 }
 
 async fn get_latest_posts(amount: usize) -> Result<Vec<Post>, StatusCode> {
+    let mut latest_posts: Vec<Post> = Vec::with_capacity(amount);
+
+    'users: for user in get_all_users().await? {
+        // user posts are stored in chronological order
+        for post in user.posts.into_iter().rev() {
+            let post = super::meta::get(Path(post)).await?.0;
+            if post.in_progress || post.is_reply() {
+                continue;
+            }
+
+            if let Some(last_post) = latest_posts.last() {
+                if post.timestamp < last_post.timestamp {
+                    if latest_posts.len() < amount {
+                        latest_posts.push(post);
+                        continue;
+                    }
+                    continue 'users;
+                }
+            } else {
+                latest_posts.push(post);
+                continue;
+            }
+
+            for cursor in (0..latest_posts.len()).rev() {
+                if post.timestamp < latest_posts[cursor].timestamp {
+                    latest_posts.insert(cursor, post);
+                    break;
+                }
+                if cursor == 0 {
+                    latest_posts.insert(0, post);
+                    break; // redundant break but the compiler isnt smart enough to tell (yet!)
+                }
+            }
+
+            if latest_posts.len() > amount {
+                latest_posts.pop();
+            }
+        }
+    }
+
+    Ok(latest_posts)
+}
+
+async fn get_all_users() -> Result<Vec<crate::blog::User>, StatusCode> {
     let mut users_files =
         match tokio::fs::read_dir(std::path::Path::new(STORE_PATH).join("user")).await {
             Ok(it) => it,
@@ -82,28 +127,5 @@ async fn get_latest_posts(amount: usize) -> Result<Vec<Post>, StatusCode> {
         }
     }
 
-    let mut latest_post_ids = Vec::new();
-
-    for user in users {
-        if user.posts.is_empty() {
-            continue;
-        }
-
-        // posts are in reverse chronological order
-        latest_post_ids.extend_from_slice(&user.posts[user.posts.len().saturating_sub(amount)..]);
-    }
-
-    let mut latest_posts = Vec::new();
-    for post in latest_post_ids {
-        let post = super::meta::get(Path(post)).await?.0;
-        if post.in_progress {
-            continue;
-        }
-
-        latest_posts.push(post);
-    }
-
-    latest_posts.sort_unstable_by(|a, b| a.timestamp.cmp(&b.timestamp).reverse());
-
-    Ok(latest_posts)
+    Ok(users)
 }

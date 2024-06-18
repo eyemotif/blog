@@ -56,7 +56,7 @@ pub(super) async fn post(
         },
     );
 
-    tokio::spawn(async move { state.clone().cleanup_stale_posts().await });
+    tokio::spawn(async move { state.cleanup_stale_posts().await });
 
     match tokio::fs::create_dir(&post_path).await {
         Ok(()) => (),

@@ -50,8 +50,8 @@ pub struct Permissions {
     pub can_create_posts: bool,
 }
 
-#[derive(Debug)]
-pub struct Media {}
+// #[derive(Debug)]
+// pub struct Media {}
 
 pub fn get_random_hex_string<const LEN: usize>() -> String {
     let mut bytes = [0u8; LEN];
@@ -61,4 +61,10 @@ pub fn get_random_hex_string<const LEN: usize>() -> String {
         let _ = write!(output, "{b:02x}");
         output
     })
+}
+
+impl Post {
+    pub fn is_reply(&self) -> bool {
+        self.reply_to.is_some()
+    }
 }

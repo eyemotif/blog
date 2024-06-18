@@ -104,7 +104,7 @@ impl super::State {
 
         write_post(&new_post).await;
 
-        // TODO: don't just clear the cache, but update it!
+        // HACK: invalidates the whole cache when a change is made
         self.cache.write().await.latest_posts = None;
     }
 }
